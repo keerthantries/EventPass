@@ -1,0 +1,248 @@
+export type UserRole = "super_admin" | "organizer" | "security";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  organizerId?: string | null;
+  isActive?: boolean;
+}
+
+export interface AuthSession {
+  token: string;
+  user: User;
+}
+
+export type EventStatus = "draft" | "published" | "completed" | "archived";
+export type RsvpMode = "disabled" | "accept_only" | "accept_decline" | "accept_decline_maybe";
+export type WorkflowKey = "add_qr_checkin" | "invite_rsvp" | "invite_rsvp_form_qr" | "invite_form_approval_qr";
+export type QrTiming = "on_add" | "on_rsvp_accept" | "on_approval";
+
+export interface EventModules {
+  invitation: boolean;
+  rsvp: boolean;
+  dynamicForm: boolean;
+  qrCheckin: boolean;
+  csvImport: boolean;
+  reports: boolean;
+}
+
+export interface EventConfig {
+  _id: string;
+  eventId: string;
+  modules: EventModules;
+  rsvpMode: RsvpMode;
+  rsvpDeadline?: string | null;
+  rsvpMessages?: { confirmation?: string; thankYou?: string };
+  workflow: WorkflowKey;
+  qrGenerationTiming: QrTiming;
+  requiresApproval: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EventListItem {
+  id: string;
+  name: string;
+  type: string;
+  status: EventStatus;
+  startDate: string;
+  guestCount: number;
+}
+
+export interface EventDetail extends EventListItem {
+  description?: string;
+  venue?: string;
+  mapLink?: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone: string;
+  bannerImage?: string;
+  coverImage?: string;
+  logo?: string;
+  branding: { primaryColor?: string; secondaryColor?: string };
+  createdAt: string;
+  updatedAt: string;
+  config?: EventConfig;
+  stats?: { totalGuests: number; present: number; rsvpAccepted: number };
+}
+
+export interface Category {
+  _id: string;
+  eventId: string;
+  name: string;
+  colorTag?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RsvpStatus = "pending" | "accepted" | "declined" | "maybe";
+export type AttendanceStatus = "absent" | "present";
+export type ApprovalStatus = "not_required" | "pending" | "approved" | "rejected";
+export type InvitationStatus = "pending" | "sent" | "opened";
+
+export interface Guest {
+  _id: string;
+  eventId: string;
+  categoryId?: string | null;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  invitationToken?: string;
+  invitationStatus: InvitationStatus;
+  rsvpStatus: RsvpStatus;
+  rsvpRespondedAt?: string | null;
+  approvalStatus: ApprovalStatus;
+  qrToken?: string;
+  qrGeneratedAt?: string | null;
+  attendanceStatus: AttendanceStatus;
+  checkInTime?: string | null;
+  checkedInBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FormFieldType =
+  | "short_text"
+  | "long_text"
+  | "number"
+  | "email"
+  | "phone"
+  | "date"
+  | "time"
+  | "dropdown"
+  | "radio"
+  | "checkbox"
+  | "multi_choice"
+  | "yes_no";
+
+export interface FormField {
+  key: string;
+  label: string;
+  type: FormFieldType;
+  required: boolean;
+  placeholder?: string;
+  defaultValue?: unknown;
+  description?: string;
+  options?: string[];
+}
+
+export interface FormResponseRow {
+  guestId: string;
+  guestName: string;
+  answers: Record<string, unknown>;
+  submittedAt: string;
+}
+
+export interface CheckinResult {
+  guest: { fullName: string; category: string | null };
+  attendanceStatus: AttendanceStatus;
+  checkInTime: string;
+}
+
+export interface CheckinSearchResult {
+  id: string;
+  fullName: string;
+  category: string | null;
+  attendanceStatus: AttendanceStatus;
+}
+
+export interface RecentCheckin {
+  guestName: string;
+  checkInTime: string;
+  method: "camera" | "manual";
+}
+
+export interface DashboardData {
+  summary: {
+    totalGuests: number;
+    invitationsSent: number;
+    rsvpAccepted: number;
+    rsvpDeclined: number;
+    pendingResponses: number;
+    presentGuests: number;
+    absentGuests: number;
+    attendancePercentage: number;
+  };
+  attendanceTrend: { hour: string; count: number }[];
+  rsvpDistribution: { status: string; count: number }[];
+  recentActivity: { type: string; guestName: string; at: string }[];
+  liveCheckins: { guestName: string; category: string | null; checkInTime: string }[];
+}
+
+export interface AttendanceReportRow {
+  guestName: string;
+  category: string | null;
+  rsvpStatus: RsvpStatus;
+  attendanceStatus: AttendanceStatus;
+  checkInTime: string | null;
+}
+
+export interface RsvpReportRow {
+  guestName: string;
+  category: string | null;
+  rsvpStatus: RsvpStatus;
+  rsvpRespondedAt: string | null;
+}
+
+export interface ImportResult {
+  totalRows: number;
+  imported: number;
+  skippedDuplicates: number;
+  failed: number;
+  errors: { row: number; reason: string }[];
+}
+
+export interface SecurityStaff {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+}
+
+export interface Invitation {
+  event: {
+    name: string;
+    banner?: string;
+    venue?: string;
+    mapLink?: string;
+    startDate: string;
+    startTime?: string;
+    endTime?: string;
+    branding?: { primaryColor?: string; secondaryColor?: string };
+  };
+  guest: { fullName: string; rsvpStatus: RsvpStatus };
+  config: { modules: EventModules; rsvpMode: RsvpMode };
+  formSchema: FormField[];
+}
+
+export interface InvitationSubmitResult {
+  rsvpStatus: RsvpStatus;
+  rsvpRespondedAt: string;
+  nextStep: "form" | "qr" | "done";
+}
+
+export interface FormSubmitResult {
+  submitted: boolean;
+  approvalStatus: ApprovalStatus;
+  qrToken: string | null;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface ApiErrorBody {
+  error?: {
+    code?: string;
+    message: string;
+    details?: unknown[];
+  };
+  message?: string;
+}
