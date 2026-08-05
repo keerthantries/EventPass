@@ -30,9 +30,9 @@ export function GuestImportForm({ eventId, onDone }: { eventId: string; onDone?:
   return (
     <div className="space-y-4">
       <FileUpload
-        accept=".csv"
-        label="Choose CSV file"
-        hint="CSV columns: fullName, email, phone, category, notes (fullName required)"
+        accept=".csv,.xlsx,.xls"
+        label="Choose CSV or Excel file"
+        hint="Supports CSV and Excel (.xlsx). Columns: fullName, email, phone, category, notes (fullName required)"
         onFile={setFile}
       />
       {importMutation.isError && !importMutation.data ? (

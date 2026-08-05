@@ -41,7 +41,17 @@
   --animate-slide-up: slide-up 0.22s ease-out;
   --animate-slide-in-from-right: slide-in-from-right 0.22s ease-out;
   --animate-slide-in-from-left: slide-in-from-left 0.22s ease-out;
+  --animate-scanline: scanline 2.2s ease-in-out infinite;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
 
+  @keyframes scanline {
+    0%, 100% { transform: translateY(0); opacity: 0.1; }
+    50% { transform: translateY(240px); opacity: 1; }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+  }
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }

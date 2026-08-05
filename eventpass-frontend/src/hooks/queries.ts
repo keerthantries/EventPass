@@ -46,17 +46,22 @@ import {
 import type { EventListItem, EventDetail, Guest, Category } from "@/lib/types";
 
 export const qk = {
-  events: (params?: Record<string, string>) => ["events", params] as const,
+  events: (params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["events", params] as const) : (["events"] as const),
   event: (id: string) => ["event", id] as const,
   categories: (eventId: string) => ["categories", eventId] as const,
-  guests: (eventId: string, params?: Record<string, string>) => ["guests", eventId, params] as const,
+  guests: (eventId: string, params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["guests", eventId, params] as const) : (["guests", eventId] as const),
   form: (eventId: string) => ["form", eventId] as const,
-  formResponses: (eventId: string, params?: Record<string, string>) => ["form-responses", eventId, params] as const,
+  formResponses: (eventId: string, params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["form-responses", eventId, params] as const) : (["form-responses", eventId] as const),
   checkinSearch: (eventId: string, q: string) => ["checkin-search", eventId, q] as const,
   recent: (eventId: string) => ["recent-checkins", eventId] as const,
   dashboard: (eventId: string) => ["dashboard", eventId] as const,
-  attendanceReport: (eventId: string, params?: Record<string, string>) => ["attendance-report", eventId, params] as const,
-  rsvpReport: (eventId: string, params?: Record<string, string>) => ["rsvp-report", eventId, params] as const,
+  attendanceReport: (eventId: string, params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["attendance-report", eventId, params] as const) : (["attendance-report", eventId] as const),
+  rsvpReport: (eventId: string, params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["rsvp-report", eventId, params] as const) : (["rsvp-report", eventId] as const),
   invitation: (token: string) => ["invitation", token] as const,
   team: () => ["team"] as const,
 };

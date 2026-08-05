@@ -159,11 +159,13 @@ export function DataTable<T>({
     <div className="rounded-lg border border-border bg-surface">
       {(onSearchChange || toolbar || bulkBar) && (
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-nowrap items-center gap-2 sm:min-w-0">
             {onSearchChange ? (
-              <SearchInput value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder={searchPlaceholder} />
+              <div className="min-w-0">
+                <SearchInput value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder={searchPlaceholder} />
+              </div>
             ) : null}
-            {toolbar ? <div className="flex flex-wrap items-center gap-2">{toolbar}</div> : null}
+            {toolbar ? <div className="flex flex-nowrap items-center gap-2">{toolbar}</div> : null}
           </div>
           {selected && selected.length > 0 && bulkBar ? (
             <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs text-fg">

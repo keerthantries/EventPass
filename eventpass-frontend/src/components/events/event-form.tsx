@@ -1,34 +1,50 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ApiClientError } from "@/lib/api";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/queries";
 import type { EventDetail } from "@/lib/types";
+import { EVENT_TYPES, TIMEZONES } from "@/lib/event-options";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 
 const schema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters").max(150),
-    type: z.string().min(1, "Type is required").max(50),
+    type: z.string().max(50).optional().or(z.literal("")),
     description: z.string().max(2000).optional().or(z.literal("")),
     venue: z.string().max(300).optional().or(z.literal("")),
     mapLink: z.string().url("Enter a valid URL").optional().or(z.literal("")),
-    startDate: z.string().min(1, "Start date is required"),
+    startDate: z.string().optional().or(z.literal("")),
     endDate: z.string().optional().or(z.literal("")),
     startTime: z.string().optional().or(z.literal("")),
     endTime: z.string().optional().or(z.literal("")),
     timezone: z.string().optional().or(z.literal("")),
   })
-  .refine((d) => !d.endDate || d.endDate >= d.startDate, {
+  .refine((d) => !d.endDate || !d.startDate || d.endDate >= d.startDate, {
     message: "End date must be on or after start date",
     path: ["endDate"],
+  })
+  .refine((d) => {
+    const sameDay = !d.endDate || !d.startDate || d.endDate === d.startDate;
+    if (!sameDay || !d.endTime || !d.startTime) return true;
+    return d.endTime >= d.startTime;
+  }, {
+    message: "End time must be after start time",
+    path: ["endTime"],
   });
 
 type FormValues = z.infer<typeof schema>;
@@ -45,7 +61,7 @@ function toFormValues(event?: EventDetail): FormValues {
     endDate: iso(event?.endDate),
     startTime: event?.startTime ?? "",
     endTime: event?.endTime ?? "",
-    timezone: event?.timezone ?? "Asia/Kolkata",
+    timezone: event?.timezone ?? "America/New_York",
   };
 }
 
@@ -65,6 +81,7 @@ export function EventForm({ mode, event, onSuccess, onCancel }: EventFormProps) 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -74,7 +91,9 @@ export function EventForm({ mode, event, onSuccess, onCancel }: EventFormProps) 
   const onSubmit = async (values: FormValues) => {
     const payload: Record<string, unknown> = {
       ...values,
-      timezone: values.timezone || "Asia/Kolkata",
+      timezone: values.timezone || "America/New_York",
+      type: values.type || undefined,
+      startDate: values.startDate || undefined,
       description: values.description || undefined,
       venue: values.venue || undefined,
       mapLink: values.mapLink || undefined,
@@ -111,35 +130,72 @@ export function EventForm({ mode, event, onSuccess, onCancel }: EventFormProps) 
           {errors.name ? <p className="text-xs text-danger">{errors.name.message}</p> : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="type">Type</Label>
-          <Input id="type" placeholder="Conference" {...register("type")} />
+          <Label htmlFor="type">
+            Type <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Input id="type" list="event-types" placeholder="Wedding, Conference, Party…" {...register("type")} />
+          <datalist id="event-types">
+            {EVENT_TYPES.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
           {errors.type ? <p className="text-xs text-danger">{errors.type.message}</p> : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="venue">Venue</Label>
+          <Label htmlFor="venue">
+            Venue <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="venue" placeholder="City Convention Centre" {...register("venue")} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="startDate">Start date</Label>
+          <Label htmlFor="startDate">
+            Start date <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="startDate" type="date" {...register("startDate")} />
           {errors.startDate ? <p className="text-xs text-danger">{errors.startDate.message}</p> : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="endDate">End date</Label>
+          <Label htmlFor="endDate">
+            End date <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="endDate" type="date" {...register("endDate")} />
           {errors.endDate ? <p className="text-xs text-danger">{errors.endDate.message}</p> : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="startTime">Start time</Label>
+          <Label htmlFor="startTime">
+            Start time <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="startTime" type="time" {...register("startTime")} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="endTime">End time</Label>
+          <Label htmlFor="endTime">
+            End time <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="endTime" type="time" {...register("endTime")} />
+          {errors.endTime ? <p className="text-xs text-danger">{errors.endTime.message}</p> : null}
         </div>
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="timezone">Timezone</Label>
-          <Input id="timezone" {...register("timezone")} />
+          <Label htmlFor="timezone">
+            Timezone <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Controller
+            control={control}
+            name="timezone"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger id="timezone" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="mapLink">Map link</Label>

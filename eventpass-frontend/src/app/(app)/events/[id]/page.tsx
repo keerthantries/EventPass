@@ -12,14 +12,16 @@ import {
   ArrowRight,
   UserCheck,
   UserX,
+  Rocket,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { useDashboard, useEvent } from "@/hooks/queries";
+import { useDashboard, useEvent, useUpdateEvent } from "@/hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { Button } from "@/components/ui/button";
 import { AttendanceTrendChart, RsvpDonutChart } from "@/components/dashboard/charts";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useToast } from "@/components/ui/toast";
 import { formatTime } from "@/lib/utils";
 
 function SummaryCard({
@@ -54,9 +56,11 @@ function SummaryCard({
 export default function EventOverviewPage() {
   const params = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
   const isAdmin = user?.role === "organizer" || user?.role === "super_admin";
 
   const { data: event, isLoading, isError, error, refetch } = useEvent(params.id);
+  const updateMutation = useUpdateEvent(params.id);
   const {
     data: dash,
     isLoading: dashLoading,
@@ -64,6 +68,16 @@ export default function EventOverviewPage() {
     error: dashErrorObj,
     refetch: dashRefetch,
   } = useDashboard(params.id);
+
+  const handlePublish = async () => {
+    try {
+      await updateMutation.mutateAsync({ status: "published" });
+      toast({ title: "Event published", description: "Your event is now live.", variant: "success" });
+      refetch();
+    } catch (err) {
+      toast({ title: "Could not publish event", description: (err as Error).message, variant: "error" });
+    }
+  };
 
   if (isLoading) return <PageSkeleton />;
   if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
@@ -145,6 +159,12 @@ export default function EventOverviewPage() {
             Reports
           </Link>
         </Button>
+        {event.status === "draft" ? (
+          <Button size="sm" onClick={handlePublish} loading={updateMutation.isPending}>
+            <Rocket className="size-4" />
+            Publish event
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

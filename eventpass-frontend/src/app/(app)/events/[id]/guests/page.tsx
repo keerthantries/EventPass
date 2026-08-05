@@ -7,11 +7,11 @@ import {
   Pencil,
   Trash2,
   QrCode,
-  Link2,
   Download,
   Upload,
   UserCheck,
   X,
+  Share2,
 } from "lucide-react";
 import {
   useGuests,
@@ -23,7 +23,7 @@ import {
   useEvent,
 } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
-import { downloadFile, ApiClientError } from "@/lib/api";
+import { downloadFile, ApiClientError, API_URL, tokenStore } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { Guest } from "@/lib/types";
 import { DataTable, type DataTableColumn } from "@/components/ui/datatable";
@@ -49,6 +49,8 @@ import {
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody } from "@/components/ui/modal";
 import { GuestForm } from "@/components/guests/guest-form";
 import { GuestImportForm } from "@/components/guests/guest-import-form";
+import { GuestQrModal } from "@/components/guests/guest-qr-modal";
+import { InvitationShareModal } from "@/components/guests/invitation-share-modal";
 import { rsvpBadge, attendanceBadge, approvalBadge, CategoryDot } from "@/components/guests/guest-badges";
 import { useToast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/utils";
@@ -73,6 +75,8 @@ export default function GuestsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignCategory, setReassignCategory] = useState("");
+  const [qrGuest, setQrGuest] = useState<Guest | null>(null);
+  const [inviteGuest, setInviteGuest] = useState<Guest | null>(null);
 
   const debouncedSearch = useDebounce(search, 300);
 
@@ -119,12 +123,18 @@ export default function GuestsPage() {
         cell: (g) =>
           g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "—"} /> : <span className="text-fg-muted">—</span>,
       },
-      { key: "rsvpStatus", header: "RSVP", cell: (g) => <Badge variant={rsvpBadge(g.rsvpStatus).variant}>{rsvpBadge(g.rsvpStatus).label}</Badge> },
-      {
-        key: "attendanceStatus",
-        header: "Attendance",
-        cell: (g) => <Badge variant={attendanceBadge(g.attendanceStatus).variant}>{attendanceBadge(g.attendanceStatus).label}</Badge>,
-      },
+      ...(event?.config?.modules.rsvp
+        ? [{ key: "rsvpStatus", header: "RSVP", cell: (g: Guest) => <Badge variant={rsvpBadge(g.rsvpStatus).variant}>{rsvpBadge(g.rsvpStatus).label}</Badge> }]
+        : []),
+      ...(event?.config?.modules.qrCheckin
+        ? [
+            {
+              key: "attendanceStatus",
+              header: "Attendance",
+              cell: (g: Guest) => <Badge variant={attendanceBadge(g.attendanceStatus).variant}>{attendanceBadge(g.attendanceStatus).label}</Badge>,
+            },
+          ]
+        : []),
       ...(event?.config?.requiresApproval
         ? [{ key: "approvalStatus", header: "Approval", cell: (g: Guest) => <Badge variant={approvalBadge(g.approvalStatus).variant}>{approvalBadge(g.approvalStatus).label}</Badge> }]
         : []),
@@ -132,6 +142,23 @@ export default function GuestsPage() {
         key: "checkInTime",
         header: "Checked in",
         cell: (g) => <span className="text-fg-secondary">{g.checkInTime ? formatDateTime(g.checkInTime) : "—"}</span>,
+      },
+      {
+        key: "qr",
+        header: "QR",
+        className: "w-14 text-center",
+        headerClassName: "text-center",
+        cell: (g) => (
+          <button
+            type="button"
+            onClick={() => (g.qrToken ? setQrGuest(g) : handleGenerateQr(g))}
+            title={g.qrToken ? "View QR code" : "Generate QR code"}
+            aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
+            className="inline-flex size-8 items-center justify-center rounded-md border border-transparent transition-colors hover:border-primary/40 hover:bg-primary/10"
+          >
+            {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4 text-fg-muted" />}
+          </button>
+        ),
       },
     ];
     return cols;
@@ -151,6 +178,7 @@ export default function GuestsPage() {
     try {
       await qrMutation.mutateAsync(guest._id);
       toast({ title: "QR code generated", variant: "success" });
+      setQrGuest({ ...guest, qrToken: guest.qrToken ?? "pending", qrGeneratedAt: new Date().toISOString() });
     } catch (err) {
       toast({ title: "Could not generate QR", description: (err as Error).message, variant: "error" });
     }
@@ -165,14 +193,52 @@ export default function GuestsPage() {
     }
   };
 
-  const handleCopyInvite = async (guest: Guest) => {
-    if (!guest.invitationToken) return;
+  const handleShareQr = async (guest: Guest) => {
+    if (!guest.qrToken) return;
+    const eventName = event?.name ?? "this event";
+
+    const openWhatsApp = () => {
+      const phone = guest.phone ? guest.phone.replace(/[^\d]/g, "") : "";
+      const message = [
+        `You're invited to ${eventName}!`,
+        guest.invitationToken ? `${window.location.origin}/invite/${guest.invitationToken}` : "",
+        "Show your QR code at the entrance to check in.",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+    };
+
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/invite/${guest.invitationToken}`);
-      toast({ title: "Invitation link copied", variant: "success" });
-    } catch {
-      toast({ title: "Could not copy link", variant: "error" });
+      const res = await fetch(`${API_URL}/guests/${guest._id}/qr/download`, {
+        headers: tokenStore.get() ? { Authorization: `Bearer ${tokenStore.get()}` } : undefined,
+        credentials: "include",
+      });
+      if (!res.ok) throw new ApiClientError("Could not fetch QR code.", res.status);
+
+      const blob = await res.blob();
+      const file = new File([blob], `${guest.fullName.replace(/\s+/g, "_")}-qr.png`, { type: "image/png" });
+      const shareData: ShareData = {
+        files: [file],
+        title: `Entry QR - ${guest.fullName}`,
+        text: `${guest.fullName}'s entry QR for ${eventName}`,
+      };
+
+      const canShare =
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare(shareData);
+
+      if (canShare) {
+        await navigator.share(shareData);
+        return;
+      }
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
     }
+
+    openWhatsApp();
   };
 
   const handleBulkDelete = async () => {
@@ -274,59 +340,65 @@ export default function GuestsPage() {
         }
         toolbar={
           <>
-            <Select
-              value={rsvp}
-              onValueChange={(v) => {
-                setRsvp(v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="RSVP" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All RSVP</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-                <SelectItem value="maybe">Maybe</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={attendance}
-              onValueChange={(v) => {
-                setAttendance(v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Attendance" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All attendance</SelectItem>
-                <SelectItem value="present">Present</SelectItem>
-                <SelectItem value="absent">Absent</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={category}
-              onValueChange={(v) => {
-                setCategory(v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories?.map((c) => (
-                  <SelectItem key={c._id} value={c._id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {event?.config?.modules.rsvp ? (
+              <Select
+                value={rsvp}
+                onValueChange={(v) => {
+                  setRsvp(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue placeholder="RSVP" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All RSVP</SelectItem>
+                  <SelectItem value="accepted">Accepted</SelectItem>
+                  <SelectItem value="declined">Declined</SelectItem>
+                  <SelectItem value="maybe">Maybe</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : null}
+            {event?.config?.modules.qrCheckin ? (
+              <Select
+                value={attendance}
+                onValueChange={(v) => {
+                  setAttendance(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-32 text-xs">
+                  <SelectValue placeholder="Attendance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All attendance</SelectItem>
+                  <SelectItem value="present">Present</SelectItem>
+                  <SelectItem value="absent">Absent</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : null}
+            {categories && categories.length > 0 ? (
+              <Select
+                value={category}
+                onValueChange={(v) => {
+                  setCategory(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-36 text-xs">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All categories</SelectItem>
+                  {categories?.map((c) => (
+                    <SelectItem key={c._id} value={c._id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
           </>
         }
         titleAccessor={(g) => g.fullName}
@@ -344,12 +416,13 @@ export default function GuestsPage() {
                     ]
                   : []),
                 { label: (<span className="inline-flex items-center gap-2"><Pencil className="size-3.5" />Edit</span>), onClick: () => setEditing(g) },
-                ...(g.invitationToken
-                  ? [{ label: (<span className="inline-flex items-center gap-2"><Link2 className="size-3.5" />Copy invitation link</span>), onClick: () => handleCopyInvite(g) }]
-                  : []),
-                g.qrToken
-                  ? { label: (<span className="inline-flex items-center gap-2"><Download className="size-3.5" />Download QR</span>), onClick: () => handleDownload(`/guests/${g._id}/qr/download`) }
-                  : { label: (<span className="inline-flex items-center gap-2"><QrCode className="size-3.5" />Generate QR</span>), onClick: () => handleGenerateQr(g) },
+                { label: (<span className="inline-flex items-center gap-2"><Share2 className="size-3.5" />Share invitation</span>), onClick: () => setInviteGuest(g) },
+                ...(g.qrToken
+                  ? [
+                      { label: (<span className="inline-flex items-center gap-2"><Share2 className="size-3.5" />Share QR</span>), onClick: () => handleShareQr(g) },
+                      { label: (<span className="inline-flex items-center gap-2"><Download className="size-3.5" />Download QR</span>), onClick: () => handleDownload(`/guests/${g._id}/qr/download`) },
+                    ]
+                  : [{ label: (<span className="inline-flex items-center gap-2"><QrCode className="size-3.5" />Generate QR</span>), onClick: () => handleGenerateQr(g) }]),
                 { label: (<span className="inline-flex items-center gap-2"><Trash2 className="size-3.5" />Delete</span>), onClick: () => handleDelete(g), destructive: true },
               ]
             : undefined
@@ -391,8 +464,7 @@ export default function GuestsPage() {
         </ModalContent>
       </Modal>
 
-      <Modal open={reassignOpen} onOpenChange={setReassignOpen}>
-        <ModalContent>
+      <Modal open={reassignOpen} onOpenChange={setReassignOpen}>        <ModalContent>
           <ModalHeader>
             <ModalTitle>Reassign category</ModalTitle>
             <ModalDescription>{selected.length} selected guests</ModalDescription>
@@ -424,6 +496,23 @@ export default function GuestsPage() {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      <GuestQrModal
+        guest={qrGuest}
+        eventName={event?.name}
+        open={!!qrGuest}
+        onOpenChange={(o) => !o && setQrGuest(null)}
+        onShare={handleShareQr}
+        onRegenerate={handleGenerateQr}
+        regenerating={qrMutation.isPending}
+      />
+
+      <InvitationShareModal
+        guest={inviteGuest}
+        event={event}
+        open={!!inviteGuest}
+        onOpenChange={(o) => !o && setInviteGuest(null)}
+      />
     </div>
   );
 }

@@ -67,7 +67,7 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
       fullName: values.fullName,
       email: values.email || undefined,
       phone: values.phone || undefined,
-      category: values.category || undefined,
+      category: values.category && values.category !== "none" ? values.category : undefined,
       notes: values.notes || undefined,
     };
     try {
@@ -91,23 +91,31 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="space-y-1.5">
-        <Label htmlFor="fullName">Full name</Label>
-        <Input id="fullName" placeholder="Aarav Mehta" {...register("fullName")} />
+        <Label htmlFor="fullName">
+          Full name <span className="text-danger">*</span>
+        </Label>
+        <Input id="fullName" placeholder="Daniel Smith" {...register("fullName")} />
         {errors.fullName ? <p className="text-xs text-danger">{errors.fullName.message}</p> : null}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">
+            Email <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
           <Input id="email" type="email" placeholder="guest@example.com" {...register("email")} />
           {errors.email ? <p className="text-xs text-danger">{errors.email.message}</p> : null}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" placeholder="+91 98765 43210" {...register("phone")} />
+          <Label htmlFor="phone">
+            Phone <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Input id="phone" placeholder="+1 555-123-4567" {...register("phone")} />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label>Category</Label>
+        <Label>
+          Category <span className="font-normal text-fg-muted">(optional)</span>
+        </Label>
         <Select value={category} onValueChange={(v) => setValue("category", v)}>
           <SelectTrigger>
             <SelectValue placeholder="No category" />
@@ -123,7 +131,9 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
         </Select>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="notes">Notes</Label>
+        <Label htmlFor="notes">
+          Notes <span className="font-normal text-fg-muted">(optional)</span>
+        </Label>
         <Textarea id="notes" rows={2} placeholder="Internal notes (not visible to guests)" {...register("notes")} />
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">

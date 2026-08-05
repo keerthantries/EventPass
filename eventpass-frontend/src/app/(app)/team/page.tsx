@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { Plus, Trash2, ShieldCheck } from "lucide-react";
-import { useTeam, useCreateSecurityStaff, useDeactivateSecurityStaff } from "@/hooks/queries";
+import {
+  useTeam,
+  useCreateSecurityStaff,
+  useDeactivateSecurityStaff,
+} from "@/hooks/queries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,7 +18,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody } from "@/components/ui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalDescription,
+  ModalBody,
+} from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import { initials } from "@/lib/utils";
@@ -48,22 +59,41 @@ export default function TeamPage() {
       setOpen(false);
       reset();
     } catch (err) {
-      toast({ title: "Could not create staff", description: err instanceof ApiClientError ? err.message : "Try again", variant: "error" });
+      toast({
+        title: "Could not create staff",
+        description: err instanceof ApiClientError ? err.message : "Try again",
+        variant: "error",
+      });
     }
   };
 
   const handleDeactivate = async (id: string, name: string) => {
-    if (!window.confirm(`Deactivate ${name}? They will no longer be able to sign in.`)) return;
+    if (
+      !window.confirm(
+        `Deactivate ${name}? They will no longer be able to sign in.`,
+      )
+    )
+      return;
     try {
       await deactivateMutation.mutateAsync(id);
       toast({ title: "Staff deactivated", variant: "success" });
     } catch (err) {
-      toast({ title: "Could not deactivate", description: (err as Error).message, variant: "error" });
+      toast({
+        title: "Could not deactivate",
+        description: (err as Error).message,
+        variant: "error",
+      });
     }
   };
 
   if (isLoading) return <PageSkeleton />;
-  if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
+  if (isError)
+    return (
+      <PageError
+        message={(error as Error)?.message}
+        onRetry={() => refetch()}
+      />
+    );
 
   return (
     <div>
@@ -91,7 +121,10 @@ export default function TeamPage() {
           <CardContent className="p-0">
             <ul className="divide-y divide-border">
               {data.map((s) => (
-                <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
                   <div className="flex items-center gap-3">
                     <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                       {initials(s.name)}
@@ -102,9 +135,18 @@ export default function TeamPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {s.isActive ? <Badge variant="success">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}
                     {s.isActive ? (
-                      <Button variant="ghost" size="icon" onClick={() => handleDeactivate(s.id, s.name)} aria-label={`Deactivate ${s.name}`}>
+                      <Badge variant="success">Active</Badge>
+                    ) : (
+                      <Badge variant="secondary">Inactive</Badge>
+                    )}
+                    {s.isActive ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeactivate(s.id, s.name)}
+                        aria-label={`Deactivate ${s.name}`}
+                      >
                         <Trash2 className="size-4 text-danger" />
                       </Button>
                     ) : null}
@@ -120,30 +162,66 @@ export default function TeamPage() {
         <ModalContent>
           <ModalHeader>
             <ModalTitle>Add security staff</ModalTitle>
-            <ModalDescription>They can sign in and use the check-in console, but cannot modify guests.</ModalDescription>
+            <ModalDescription>
+              They can sign in and use the check-in console, but cannot modify
+              guests.
+            </ModalDescription>
           </ModalHeader>
           <ModalBody>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-4"
+              noValidate
+            >
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full name</Label>
-                <Input id="name" placeholder="Rahul Kumar" {...register("name")} />
-                {errors.name ? <p className="text-xs text-danger">{errors.name.message}</p> : null}
+                <Input
+                  id="name"
+                  placeholder="Michael Johnson"
+                  {...register("name")}
+                />
+                {errors.name ? (
+                  <p className="text-xs text-danger">{errors.name.message}</p>
+                ) : null}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="rahul@venue.com" {...register("email")} />
-                {errors.email ? <p className="text-xs text-danger">{errors.email.message}</p> : null}
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="michael@venue.com"
+                  {...register("email")}
+                />
+                {errors.email ? (
+                  <p className="text-xs text-danger">{errors.email.message}</p>
+                ) : null}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="At least 8 characters" {...register("password")} />
-                {errors.password ? <p className="text-xs text-danger">{errors.password.message}</p> : null}
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  {...register("password")}
+                />
+                {errors.password ? (
+                  <p className="text-xs text-danger">
+                    {errors.password.message}
+                  </p>
+                ) : null}
               </div>
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" loading={isSubmitting || createMutation.isPending}>
+                <Button
+                  type="submit"
+                  loading={isSubmitting || createMutation.isPending}
+                >
                   Create staff
                 </Button>
               </div>
