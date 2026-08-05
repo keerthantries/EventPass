@@ -19,15 +19,32 @@ async function performCheckin(guestId: string, req: Request, res: Response, meth
     throw ApiError.gone('EVENT_CLOSED', 'This event is closed and no longer accepting check-ins.');
   }
 
+  // Fast-path duplicate check for a friendly message, but the authoritative guard
+  // is the atomic updateMany below (no chance of a double check-in from race conditions).
   if (guest.attendanceStatus === 'present') {
     await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'duplicate', scannedBy: req.user!.sub, method });
     throw ApiError.conflict('Guest already checked in.', [{ checkInTime: guest.checkInTime }]);
   }
 
-  guest.attendanceStatus = 'present';
-  guest.checkInTime = new Date();
-  guest.checkedInBy = req.user!.sub as any;
-  await guest.save();
+  // Atomic claim: only the first writer flips absent -> present. Any caller that
+  // raced here gets 0 modifiedCount and is treated as an already-checked-in guest,
+  // guaranteeing no duplicate entry even under concurrent scans.
+  const claimed = await Guest.updateOne(
+    { _id: guest._id, attendanceStatus: 'absent' },
+    {
+      $set: {
+        attendanceStatus: 'present' as const,
+        checkInTime: new Date(),
+        checkedInBy: req.user!.sub as any,
+      },
+    }
+  );
+
+  if (claimed.modifiedCount === 0) {
+    const already = await Guest.findById(guest._id);
+    await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'duplicate', scannedBy: req.user!.sub, method });
+    throw ApiError.conflict('Guest already checked in.', [{ checkInTime: already?.checkInTime }]);
+  }
 
   await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'success', scannedBy: req.user!.sub, method });
 

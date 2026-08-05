@@ -28,14 +28,14 @@ const eventSchema = new Schema<IEvent>(
     organizerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 150 },
     description: { type: String, maxlength: 2000 },
-    type: { type: String, required: true, trim: true, maxlength: 50 }, // free text — never enum-restricted (PRD §3)
+    type: { type: String, default: 'Other', trim: true, maxlength: 50 }, // free text — never enum-restricted (PRD §3)
     venue: { type: String, maxlength: 300 },
     mapLink: String,
-    startDate: { type: Date, required: true },
+    startDate: { type: Date, default: Date.now },
     endDate: Date,
     startTime: String, // "HH:mm"
     endTime: String,
-    timezone: { type: String, default: 'Asia/Kolkata' },
+    timezone: { type: String, default: 'America/New_York' },
     bannerImage: String,
     coverImage: String,
     logo: String,

@@ -1,9 +1,16 @@
 import rateLimit from 'express-rate-limit';
+import { env } from '../config/env';
 
-/** Per API spec §1.7 rate limiting table. */
+/**
+ * Per API spec §1.7 rate limiting table.
+ * Only enforced in production — dev never locks you out during testing.
+ * Only failed attempts count, so successful logins never consume the budget.
+ */
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
+  skip: () => env.nodeEnv !== 'production',
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many login attempts. Try again later.', details: [] } },

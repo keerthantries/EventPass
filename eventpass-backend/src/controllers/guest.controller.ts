@@ -12,7 +12,7 @@ import { ApiError } from '../utils/ApiError';
 import { parsePagination, buildMeta } from '../utils/pagination';
 import { generateInvitationToken, generateQrToken } from '../utils/tokens';
 import { generateQrImage, qrFilePath } from '../utils/qr';
-import { parseGuestCsv } from '../utils/csv';
+import { parseGuestFile } from '../utils/csv';
 import { getOwnedEvent } from './event.controller';
 import { writeAuditLog } from '../models/AuditLog';
 
@@ -104,11 +104,14 @@ export const bulkGuestAction = asyncHandler(async (req: Request, res: Response) 
 export const importGuests = asyncHandler(async (req: Request, res: Response) => {
   const event = await getOwnedEvent(req.params.eventId, req);
 
-  if (!req.file) throw ApiError.badRequest('A CSV file is required (multipart field name: file).');
+  if (!req.file) throw ApiError.badRequest('A file is required (multipart field name: file).');
   if (req.file.size > 5 * 1024 * 1024) throw ApiError.badRequest('File exceeds the 5MB limit.');
+  if (req.file.mimetype === 'text/html' || !/\.(csv|xlsx|xls)$/i.test(req.file.originalname)) {
+    throw ApiError.badRequest('Unsupported file type. Upload a CSV or Excel (.xlsx) file.');
+  }
 
-  const rows = await parseGuestCsv(req.file.buffer);
-  if (rows.length > 5000) throw ApiError.badRequest('CSV exceeds the 5,000 row limit.');
+  const rows = await parseGuestFile(req.file.buffer, req.file.originalname);
+  if (rows.length > 5000) throw ApiError.badRequest('File exceeds the 5,000 row limit.');
 
   const categoryCache = new Map<string, string>();
   async function resolveCategory(name?: string): Promise<string | null> {

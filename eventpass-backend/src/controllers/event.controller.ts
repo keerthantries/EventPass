@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { Event } from '../models/Event';
-import { EventConfig } from '../models/EventConfig';
+import { EventConfig, IEventConfig, WorkflowKey } from '../models/EventConfig';
 import { Guest } from '../models/Guest';
+import { Category } from '../models/Category';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { sendSuccess } from '../utils/apiResponse';
 import { ApiError } from '../utils/ApiError';
@@ -30,6 +31,71 @@ async function getOwnedEvent(eventId: string, req: Request) {
     throw ApiError.forbidden('This event does not belong to you.');
   }
   return event;
+}
+
+/** Defaults applied to a freshly created EventConfig (mirrors the Mongoose schema). */
+const DEFAULT_MODULES: IEventConfig['modules'] = {
+  invitation: true,
+  rsvp: false,
+  dynamicForm: false,
+  qrCheckin: true,
+  csvImport: true,
+  reports: true,
+};
+
+/** Modules that must be enabled for a given workflow (workflow-vs-module consistency guard). */
+const WORKFLOW_REQUIRES: Partial<Record<WorkflowKey, { rsvp?: boolean; dynamicForm?: boolean }>> = {
+  invite_rsvp: { rsvp: true },
+  invite_rsvp_form_qr: { rsvp: true, dynamicForm: true },
+  invite_form_approval_qr: { dynamicForm: true },
+};
+
+/**
+ * Guards that the resulting config never references a module that is being
+ * disabled in the same request, e.g. switching to "Invite → RSVP → form → QR"
+ * while the Dynamic Form module is off.
+ */
+function assertWorkflowModuleConsistency(base: Partial<IEventConfig>, patch: Partial<IEventConfig>) {
+  const nextModules: IEventConfig['modules'] = { ...DEFAULT_MODULES, ...base.modules, ...patch.modules };
+  const nextWorkflow = (patch.workflow ?? base.workflow ?? 'add_qr_checkin') as WorkflowKey;
+  const needs = WORKFLOW_REQUIRES[nextWorkflow];
+  if (!needs) return;
+
+  if (needs.rsvp && !nextModules.rsvp) {
+    throw ApiError.moduleDisabled(`Workflow "${nextWorkflow}" requires the RSVP module to be enabled.`);
+  }
+  if (needs.dynamicForm && !nextModules.dynamicForm) {
+    throw ApiError.moduleDisabled(`Workflow "${nextWorkflow}" requires the Dynamic Form module to be enabled.`);
+  }
+}
+
+/**
+ * Pre-populates sensible default categories when an event is created, so the
+ * organizer has a useful starting point instead of a blank "categories" tab.
+ * Wedding/marriage events get guest-group specific categories; every other
+ * type gets generic ones. Categories stay fully editable/deletable.
+ */
+function weddingKeywords(eventType?: string) {
+  const t = (eventType ?? '').toLowerCase();
+  return /wed|marri|bride|groom|shaadi|ceremony|nuptial/.test(t);
+}
+
+async function seedDefaultCategories(event: any) {
+  const defaults = weddingKeywords(event.type)
+    ? [
+        { name: "Bride's Guests", colorTag: '#EC4899' },
+        { name: "Groom's Guests", colorTag: '#8B5CF6' },
+        { name: 'Family', colorTag: '#F59E0B' },
+        { name: 'Friends', colorTag: '#10B981' },
+        { name: 'VIP', colorTag: '#3B82F6' },
+      ]
+    : [
+        { name: 'VIP', colorTag: '#3B82F6' },
+        { name: 'Staff', colorTag: '#8B5CF6' },
+        { name: 'Guests', colorTag: '#10B981' },
+      ];
+
+  await Category.insertMany(defaults.map((c) => ({ eventId: event._id, ...c })));
 }
 
 /** GET /events */
@@ -72,12 +138,18 @@ export const listEvents = asyncHandler(async (req: Request, res: Response) => {
   return sendSuccess(res, data, 200, buildMeta(page, limit, total));
 });
 
-/** POST /events — auto-creates a default EventConfig (workflow: add_qr_checkin). */
+/** POST /events — creates an event plus its EventConfig (workflow/modules can be supplied up front). */
 export const createEvent = asyncHandler(async (req: Request, res: Response) => {
-  const event = await Event.create({ ...req.body, organizerId: req.user!.sub });
-  const config = await EventConfig.create({ eventId: event._id, workflow: 'add_qr_checkin' });
+  const { config: configInput, ...eventFields } = req.body;
 
-  await writeAuditLog(req.user!.sub, 'event.create', 'Event', event.id);
+  assertWorkflowModuleConsistency({}, configInput ?? {});
+
+  const event = await Event.create({ ...eventFields, organizerId: req.user!.sub });
+  const config = await EventConfig.create({ eventId: event._id, ...configInput });
+
+  await seedDefaultCategories(event);
+
+  await writeAuditLog(req.user!.sub, 'event.create', 'Event', event.id, { status: event.status, workflow: config.workflow });
 
   return sendSuccess(res, { id: event.id, ...event.toObject(), config }, 201);
 });
@@ -126,17 +198,7 @@ export const updateEventConfig = asyncHandler(async (req: Request, res: Response
   if (!config) throw ApiError.notFound('Event config not found.');
 
   // Guard: workflow can't reference a module that's being disabled in the same request.
-  const nextModules = { ...(config.modules as any), ...(req.body.modules ?? {}) };
-  const nextWorkflow = req.body.workflow ?? config.workflow;
-  const workflowNeedsRsvp = ['invite_rsvp', 'invite_rsvp_form_qr', 'invite_form_approval_qr'].includes(nextWorkflow);
-  const workflowNeedsForm = ['invite_rsvp_form_qr', 'invite_form_approval_qr'].includes(nextWorkflow);
-
-  if (workflowNeedsRsvp && !nextModules.rsvp) {
-    throw ApiError.moduleDisabled(`Workflow "${nextWorkflow}" requires the RSVP module to be enabled.`);
-  }
-  if (workflowNeedsForm && !nextModules.dynamicForm) {
-    throw ApiError.moduleDisabled(`Workflow "${nextWorkflow}" requires the Dynamic Form module to be enabled.`);
-  }
+  assertWorkflowModuleConsistency(config.toObject(), req.body);
 
   Object.assign(config, req.body);
   await config.save();

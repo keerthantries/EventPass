@@ -19,7 +19,7 @@ export const listCategories = asyncHandler(async (req: Request, res: Response) =
 
   return sendSuccess(
     res,
-    categories.map((c) => ({ id: c.id, name: c.name, colorTag: c.colorTag, guestCount: countMap.get(c.id) ?? 0 }))
+    categories.map((c) => ({ _id: c.id, id: c.id, name: c.name, colorTag: c.colorTag, guestCount: countMap.get(c.id) ?? 0 }))
   );
 });
 
@@ -31,7 +31,7 @@ export const createCategory = asyncHandler(async (req: Request, res: Response) =
   if (existing) throw ApiError.conflict('A category with this name already exists for this event.');
 
   const category = await Category.create({ eventId: event._id, ...req.body });
-  return sendSuccess(res, { id: category.id, name: category.name, colorTag: category.colorTag }, 201);
+  return sendSuccess(res, { _id: category.id, id: category.id, name: category.name, colorTag: category.colorTag }, 201);
 });
 
 /** PATCH /categories/:id */
