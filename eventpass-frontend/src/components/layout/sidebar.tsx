@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/ui/logo";
 import { allowedNav, globalNav, type NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
@@ -15,10 +15,8 @@ export function Sidebar() {
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex size-7 items-center justify-center rounded-md bg-primary">
-          <Ticket className="size-4 text-primary-fg" />
-        </div>
+      <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
+        <Logo />
         <span className="text-sm font-semibold text-fg">EventPass</span>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">

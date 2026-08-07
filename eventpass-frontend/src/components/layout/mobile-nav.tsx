@@ -13,7 +13,7 @@ export function MobileNav() {
   const items = allowedNav(globalNav, user?.role as UserRole | undefined);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-surface/95 backdrop-blur md:hidden" aria-label="Mobile navigation">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex overflow-x-auto border-t border-border bg-surface/95 backdrop-blur md:hidden" aria-label="Mobile navigation">
       {items.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -21,12 +21,12 @@ export function MobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors",
+              "flex min-w-0 flex-1 flex-col items-center gap-1 whitespace-nowrap py-2.5 text-[10px] font-medium transition-colors",
               active ? "text-primary" : "text-fg-muted"
             )}
           >
-            <item.icon className="size-5" />
-            {item.label}
+            <item.icon className="size-5 shrink-0" />
+            <span className="max-w-full truncate px-1">{item.label}</span>
           </Link>
         );
       })}

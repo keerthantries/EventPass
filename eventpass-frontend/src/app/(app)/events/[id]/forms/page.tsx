@@ -8,6 +8,7 @@ import { ApiClientError, downloadFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { FormField } from "@/lib/types";
 import { PageHeader } from "@/components/ui/page-header";
+import { RequireRole } from "@/components/ui/require-role";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -34,8 +35,9 @@ export default function FormsPage() {
   if (!data) return <PageSkeleton />;
 
   return (
-    <div>
-      <PageHeader title="Forms" description="Build the dynamic form guests fill after accepting an invitation." />
+    <RequireRole roles={["organizer", "super_admin"]}>
+      <div>
+        <PageHeader title="Forms" description="Build the dynamic form guests fill after accepting an invitation." />
 
       {!dynamicFormEnabled ? (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
@@ -58,7 +60,8 @@ export default function FormsPage() {
           <ResponsesTab eventId={eventId} canManage={canManage} />
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </RequireRole>
   );
 }
 

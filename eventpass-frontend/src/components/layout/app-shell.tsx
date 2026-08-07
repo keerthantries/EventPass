@@ -10,13 +10,13 @@ import { useAuth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { Logo } from "@/components/ui/logo";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Ticket } from "lucide-react";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -37,10 +37,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <Drawer open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <DrawerContent side="left" className="w-72">
           <DrawerHeader>
-            <DrawerTitle className="flex items-center gap-2 text-sm font-semibold text-fg">
-              <span className="flex size-7 items-center justify-center rounded-md bg-primary">
-                <Ticket className="size-4 text-primary-fg" />
-              </span>
+            <DrawerTitle className="flex items-center gap-2.5 text-sm font-semibold text-fg">
+              <Logo />
               EventPass
             </DrawerTitle>
           </DrawerHeader>

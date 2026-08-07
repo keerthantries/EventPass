@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ApiClientError } from "@/lib/api";
 import { PageHeader } from "@/components/ui/page-header";
+import { RequireRole } from "@/components/ui/require-role";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,7 +97,8 @@ export default function TeamPage() {
     );
 
   return (
-    <div>
+    <RequireRole roles={["organizer", "super_admin"]}>
+      <div>
       <PageHeader
         title="Team"
         description="Provision Security accounts that can scan guests at the door."
@@ -229,6 +231,7 @@ export default function TeamPage() {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </div>
+      </div>
+    </RequireRole>
   );
 }

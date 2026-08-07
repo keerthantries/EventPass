@@ -30,7 +30,7 @@ export function Pagination({ meta, onPageChange, className }: PaginationProps) {
   return (
     <nav className={cn("flex items-center justify-between gap-2", className)} aria-label="Pagination">
       <p className="text-xs text-fg-muted">
-        Page {page} of {totalPages} · {meta.total} results
+        {meta.total} results · page {page}/{totalPages}
       </p>
       <div className="flex items-center gap-1">
         <button
@@ -42,28 +42,30 @@ export function Pagination({ meta, onPageChange, className }: PaginationProps) {
           <ChevronLeft className="size-4" />
           <span className="sr-only">Previous</span>
         </button>
-        {pageWindow(page, totalPages).map((p, i) =>
-          p === "…" ? (
-            <span key={`e-${i}`} className="flex size-8 items-center justify-center text-fg-muted">
-              <MoreHorizontal className="size-4" />
-            </span>
-          ) : (
-            <button
-              key={p}
-              type="button"
-              onClick={() => onPageChange(p)}
-              aria-current={p === page ? "page" : undefined}
-              className={cn(
-                "inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors",
-                p === page
-                  ? "bg-primary text-primary-fg font-medium"
-                  : "border border-border text-fg-secondary hover:bg-surface-2 hover:text-fg"
-              )}
-            >
-              {p}
-            </button>
-          )
-        )}
+        <div className="hidden items-center gap-1 sm:flex">
+          {pageWindow(page, totalPages).map((p, i) =>
+            p === "…" ? (
+              <span key={`e-${i}`} className="flex size-8 items-center justify-center text-fg-muted">
+                <MoreHorizontal className="size-4" />
+              </span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onPageChange(p)}
+                aria-current={p === page ? "page" : undefined}
+                className={cn(
+                  "inline-flex size-8 items-center justify-center rounded-md text-sm transition-colors",
+                  p === page
+                    ? "bg-primary text-primary-fg font-medium"
+                    : "border border-border text-fg-secondary hover:bg-surface-2 hover:text-fg"
+                )}
+              >
+                {p}
+              </button>
+            )
+          )}
+        </div>
         <button
           type="button"
           disabled={page >= totalPages}

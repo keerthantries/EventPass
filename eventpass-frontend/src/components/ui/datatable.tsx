@@ -43,6 +43,7 @@ interface DataTableProps<T> {
   getRowId: (row: T) => string;
   meta?: PaginationMeta;
   onPageChange?: (page: number) => void;
+  onRowClick?: (row: T) => void;
   sort?: string;
   onSortChange?: (sort: string) => void;
   search?: string;
@@ -50,6 +51,7 @@ interface DataTableProps<T> {
   searchPlaceholder?: string;
   toolbar?: React.ReactNode;
   rowActions?: (row: T) => RowAction<T>[];
+  mobileEndContent?: (row: T) => React.ReactNode;
   selected?: string[];
   onSelectionChange?: (ids: string[]) => void;
   bulkBar?: React.ReactNode;
@@ -74,6 +76,7 @@ export function DataTable<T>({
   getRowId,
   meta,
   onPageChange,
+  onRowClick,
   sort,
   onSortChange,
   search,
@@ -81,6 +84,7 @@ export function DataTable<T>({
   searchPlaceholder,
   toolbar,
   rowActions,
+  mobileEndContent,
   selected,
   onSelectionChange,
   bulkBar,
@@ -159,13 +163,13 @@ export function DataTable<T>({
     <div className="rounded-lg border border-border bg-surface">
       {(onSearchChange || toolbar || bulkBar) && (
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-nowrap items-center gap-2 sm:min-w-0">
+          <div className="flex flex-wrap items-center gap-2 sm:min-w-0">
             {onSearchChange ? (
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 sm:flex-none">
                 <SearchInput value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder={searchPlaceholder} />
               </div>
             ) : null}
-            {toolbar ? <div className="flex flex-nowrap items-center gap-2">{toolbar}</div> : null}
+            {toolbar ? <div className="flex flex-wrap items-center gap-2">{toolbar}</div> : null}
           </div>
           {selected && selected.length > 0 && bulkBar ? (
             <div className="flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 px-3 py-1.5 text-xs text-fg">
@@ -186,7 +190,7 @@ export function DataTable<T>({
                   <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Select all" />
                 </th>
               ) : null}
-              {visibleColumns.map((col) => (
+              {columns.map((col) => (
                 <th key={col.key} className={cn("px-4 py-3 font-medium", col.headerClassName)}>
                   {col.sortable ? (
                     <button
@@ -209,13 +213,20 @@ export function DataTable<T>({
             {data.map((row) => {
               const id = getRowId(row);
               return (
-                <tr key={id} className="border-b border-border last:border-0 transition-colors hover:bg-surface-2/50">
+                <tr
+                  key={id}
+                  className={cn(
+                    "border-b border-border last:border-0 transition-colors",
+                    onRowClick ? "cursor-pointer hover:bg-surface-2/50" : "hover:bg-surface-2/50"
+                  )}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
                   {onSelectionChange ? (
                     <td className="px-4 py-3">
                       <Checkbox checked={selected?.includes(id)} onCheckedChange={() => toggleRow(id)} aria-label="Select row" />
                     </td>
                   ) : null}
-                  {visibleColumns.map((col) => (
+                  {columns.map((col) => (
                     <td key={col.key} className={cn("px-4 py-3 text-fg", col.cellClassName)}>
                       {renderCell(row, col)}
                     </td>
@@ -226,6 +237,7 @@ export function DataTable<T>({
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
+                            onClick={(e) => e.stopPropagation()}
                             className="inline-flex size-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
                             aria-label="Row actions"
                           >
@@ -259,7 +271,11 @@ export function DataTable<T>({
         {data.map((row) => {
           const id = getRowId(row);
           return (
-            <div key={id} className="flex items-start gap-3 p-4">
+            <div
+              key={id}
+              className={cn("flex items-start gap-3 p-4", onRowClick && "cursor-pointer active:bg-surface-2/60")}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
               {onSelectionChange ? (
                 <Checkbox checked={selected?.includes(id)} onCheckedChange={() => toggleRow(id)} className="mt-1" aria-label="Select row" />
               ) : null}
@@ -277,11 +293,17 @@ export function DataTable<T>({
                   ))}
                 </div>
               </div>
+              {mobileEndContent ? (
+                <div className="flex shrink-0 items-center gap-1 self-start" onClick={(e) => e.stopPropagation()}>
+                  {mobileEndContent(row)}
+                </div>
+              ) : null}
               {rowActions ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
+                      onClick={(e) => e.stopPropagation()}
                       className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
                       aria-label="Row actions"
                     >

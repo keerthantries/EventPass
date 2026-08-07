@@ -21,6 +21,7 @@ const statusVariant: Record<string, "neutral" | "success" | "warning" | "danger"
 export default function OverviewPage() {
   const { user } = useAuth();
   const { data, isLoading, isError, error, refetch } = useEvents({ page: "1", limit: "6" });
+  const canManage = user?.role === "organizer" || user?.role === "super_admin";
 
   const firstName = user?.name?.split(" ")[0] ?? "there";
 
@@ -38,12 +39,14 @@ export default function OverviewPage() {
             Manage your events, invitations and live attendance from one place.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/events/new">
-            <Plus className="size-4" />
-            New event
-          </Link>
-        </Button>
+        {canManage ? (
+          <Button asChild>
+            <Link href="/events/new">
+              <Plus className="size-4" />
+              New event
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       {events.length === 0 ? (

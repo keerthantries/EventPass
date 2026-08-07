@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -89,13 +91,29 @@ export default function LoginPage() {
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
             </div>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              {...register("password")}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="pr-9"
+                {...register("password")}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center text-fg-muted transition-colors hover:text-fg"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
             {errors.password ? (
               <p className="text-xs text-danger">{errors.password.message}</p>
             ) : null}
@@ -113,11 +131,6 @@ export default function LoginPage() {
             Create one
           </Link>
         </p>
-        <div className="mt-6 rounded-md border border-border bg-surface-2 p-3 text-xs text-fg-muted">
-          <p className="mb-1 font-medium text-fg-secondary">Demo accounts</p>
-          <p>organizer: sarah@eventpass.dev / organizer123</p>
-          <p>security: gate1@eventpass.dev / security123</p>
-        </div>
       </CardContent>
     </Card>
   );

@@ -80,7 +80,7 @@ export default function GuestsPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  const paramsObj: Record<string, string> = { page: String(page), limit: "10" };
+  const paramsObj: Record<string, string> = { page: String(page), limit: "25" };
   if (rsvp !== "all") paramsObj.rsvpStatus = rsvp;
   if (attendance !== "all") paramsObj.attendanceStatus = attendance;
   if (category !== "all") paramsObj.category = category;
@@ -110,6 +110,7 @@ export default function GuestsPage() {
         primary: true,
         sortable: true,
         sortKey: "fullName",
+        hideOnMobile: true,
         cell: (g) => (
           <div className="min-w-0">
             <p className="font-medium text-fg">{g.fullName}</p>
@@ -120,38 +121,45 @@ export default function GuestsPage() {
       {
         key: "categoryId",
         header: "Category",
+        hideOnMobile: true,
         cell: (g) =>
           g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "—"} /> : <span className="text-fg-muted">—</span>,
       },
       ...(event?.config?.modules.rsvp
-        ? [{ key: "rsvpStatus", header: "RSVP", cell: (g: Guest) => <Badge variant={rsvpBadge(g.rsvpStatus).variant}>{rsvpBadge(g.rsvpStatus).label}</Badge> }]
+        ? [{ key: "rsvpStatus", header: "RSVP", hideOnMobile: true, cell: (g: Guest) => <Badge variant={rsvpBadge(g.rsvpStatus).variant}>{rsvpBadge(g.rsvpStatus).label}</Badge> }]
         : []),
       ...(event?.config?.modules.qrCheckin
         ? [
             {
               key: "attendanceStatus",
               header: "Attendance",
+              hideOnMobile: true,
               cell: (g: Guest) => <Badge variant={attendanceBadge(g.attendanceStatus).variant}>{attendanceBadge(g.attendanceStatus).label}</Badge>,
             },
           ]
         : []),
       ...(event?.config?.requiresApproval
-        ? [{ key: "approvalStatus", header: "Approval", cell: (g: Guest) => <Badge variant={approvalBadge(g.approvalStatus).variant}>{approvalBadge(g.approvalStatus).label}</Badge> }]
+        ? [{ key: "approvalStatus", header: "Approval", hideOnMobile: true, cell: (g: Guest) => <Badge variant={approvalBadge(g.approvalStatus).variant}>{approvalBadge(g.approvalStatus).label}</Badge> }]
         : []),
       {
         key: "checkInTime",
         header: "Checked in",
+        hideOnMobile: true,
         cell: (g) => <span className="text-fg-secondary">{g.checkInTime ? formatDateTime(g.checkInTime) : "—"}</span>,
       },
       {
         key: "qr",
         header: "QR",
+        hideOnMobile: true,
         className: "w-14 text-center",
         headerClassName: "text-center",
         cell: (g) => (
           <button
             type="button"
-            onClick={() => (g.qrToken ? setQrGuest(g) : handleGenerateQr(g))}
+            onClick={(e) => {
+              e.stopPropagation();
+              g.qrToken ? setQrGuest(g) : handleGenerateQr(g);
+            }}
             title={g.qrToken ? "View QR code" : "Generate QR code"}
             aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
             className="inline-flex size-8 items-center justify-center rounded-md border border-transparent transition-colors hover:border-primary/40 hover:bg-primary/10"
@@ -406,6 +414,17 @@ export default function GuestsPage() {
           const b = rsvpBadge(g.rsvpStatus);
           return `${b.label} · ${attendanceBadge(g.attendanceStatus).label}`;
         }}
+        mobileEndContent={(g) => (
+          <button
+            type="button"
+            onClick={() => (g.qrToken ? setQrGuest(g) : handleGenerateQr(g))}
+            title={g.qrToken ? "View QR code" : "Generate QR code"}
+            aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
+            className="inline-flex size-8 items-center justify-center rounded-md border border-border-strong text-fg-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+          >
+            {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4" />}
+          </button>
+        )}
         rowActions={
           canManage
             ? (g) => [
@@ -499,7 +518,7 @@ export default function GuestsPage() {
 
       <GuestQrModal
         guest={qrGuest}
-        eventName={event?.name}
+        event={event}
         open={!!qrGuest}
         onOpenChange={(o) => !o && setQrGuest(null)}
         onShare={handleShareQr}

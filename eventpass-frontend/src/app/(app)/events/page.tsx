@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Pencil, Archive, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Archive } from "lucide-react";
 import { useEvents, useArchiveEvent } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { EventListItem, EventDetail } from "@/lib/types";
@@ -63,13 +63,7 @@ export default function EventsPage() {
       sortKey: "name",
       cell: (e) => (
         <div className="min-w-0">
-          <button
-            type="button"
-            onClick={() => router.push(`/events/${e.id}`)}
-            className="font-medium text-fg hover:text-primary"
-          >
-            {e.name}
-          </button>
+          <p className="font-medium text-fg">{e.name}</p>
           <p className="text-xs text-fg-muted">{e.type}</p>
         </div>
       ),
@@ -130,6 +124,7 @@ export default function EventsPage() {
         getRowId={(e) => e.id}
         meta={data?.meta}
         onPageChange={setPage}
+        onRowClick={(e) => router.push(`/events/${e.id}`)}
         sort={sort}
         onSortChange={setSort}
         search={search}
@@ -155,7 +150,6 @@ export default function EventsPage() {
         titleAccessor={(e) => e.name}
         subtitleAccessor={(e) => `${e.type} · ${formatDate(e.startDate)}`}
         rowActions={canManage ? (e) => [
-          { label: (<span className="inline-flex items-center gap-2"><ExternalLink className="size-3.5" />Open</span>), onClick: () => router.push(`/events/${e.id}`) },
           { label: (<span className="inline-flex items-center gap-2"><Pencil className="size-3.5" />Edit</span>), onClick: () => setEditing(e as EventDetail) },
           ...(e.status !== "archived" ? [{ label: (<span className="inline-flex items-center gap-2"><Archive className="size-3.5" />Archive</span>), onClick: () => handleArchive(e), destructive: true }] : []),
         ] : undefined}

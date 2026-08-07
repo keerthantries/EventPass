@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequireRole } from "@/components/ui/require-role";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -108,10 +109,11 @@ export default function CategoriesPage() {
   if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
 
   return (
-    <div>
-      <PageHeader
-        title="Categories"
-        description="Group guests for invitations, reporting and filtering."
+    <RequireRole roles={["organizer", "super_admin"]}>
+      <div>
+        <PageHeader
+          title="Categories"
+          description="Group guests for invitations, reporting and filtering."
         actions={
           <Button
             size="sm"
@@ -178,6 +180,7 @@ export default function CategoriesPage() {
           </ModalBody>
         </ModalContent>
       </Modal>
-    </div>
+      </div>
+    </RequireRole>
   );
 }

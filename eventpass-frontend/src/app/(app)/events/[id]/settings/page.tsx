@@ -6,6 +6,7 @@ import { Save } from "lucide-react";
 import { useEvent, useUpdateEventConfig, useUpdateBranding } from "@/hooks/queries";
 import { ApiClientError } from "@/lib/api";
 import type { EventConfig, RsvpMode, WorkflowKey, QrTiming, EventModules } from "@/lib/types";
+import { RequireRole } from "@/components/ui/require-role";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -67,10 +68,12 @@ export default function EventSettingsPage() {
   if (!event) return <PageSkeleton />;
 
   return (
-    <div>
-      <PageHeader title="Settings" description="Event configuration and guest-facing branding." />
-      <SettingsEditor eventId={eventId} event={event} />
-    </div>
+    <RequireRole roles={["organizer", "super_admin"]}>
+      <div>
+        <PageHeader title="Settings" description="Event configuration and guest-facing branding." />
+        <SettingsEditor eventId={eventId} event={event} />
+      </div>
+    </RequireRole>
   );
 }
 

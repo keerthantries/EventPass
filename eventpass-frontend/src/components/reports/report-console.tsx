@@ -61,11 +61,10 @@ function AttendanceReportTab({ eventId }: { eventId: string }) {
   const { data, isLoading, isError, error, refetch } = useAttendanceReport(eventId, paramsObj);
 
   const columns: DataTableColumn<import("@/lib/types").AttendanceReportRow>[] = [
-    { key: "guestName", header: "Guest", primary: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
-    { key: "category", header: "Category", cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
-    { key: "rsvpStatus", header: "RSVP", cell: (r) => <Badge variant={rsvpBadge(r.rsvpStatus).variant}>{rsvpBadge(r.rsvpStatus).label}</Badge> },
+    { key: "guestName", header: "Guest", primary: true, hideOnMobile: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
+    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
     { key: "attendanceStatus", header: "Attendance", cell: (r) => <Badge variant={attendanceBadge(r.attendanceStatus).variant}>{attendanceBadge(r.attendanceStatus).label}</Badge> },
-    { key: "checkInTime", header: "Checked in", cell: (r) => <span className="text-fg-secondary">{r.checkInTime ? formatDateTime(r.checkInTime) : "—"}</span> },
+    { key: "checkInTime", header: "Check-in time", cell: (r) => <span className="text-fg-secondary">{r.checkInTime ? formatDateTime(r.checkInTime) : "Not checked in"}</span> },
   ];
 
   const exportReport = (format: "csv" | "xlsx") => {
@@ -113,7 +112,7 @@ function AttendanceReportTab({ eventId }: { eventId: string }) {
           toolbar={
             <>
               <Select value={status} onValueChange={(v) => { setStatus(v); setPage(1); }}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Attendance" />
                 </SelectTrigger>
                 <SelectContent>
@@ -123,7 +122,7 @@ function AttendanceReportTab({ eventId }: { eventId: string }) {
                 </SelectContent>
               </Select>
               <Select value={category} onValueChange={(v) => { setCategory(v); setPage(1); }}>
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,10 +149,10 @@ function RsvpReportTab({ eventId }: { eventId: string }) {
   const { data, isLoading, isError, error, refetch } = useRsvpReport(eventId, { page: String(page), limit: "20" });
 
   const columns: DataTableColumn<import("@/lib/types").RsvpReportRow>[] = [
-    { key: "guestName", header: "Guest", primary: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
-    { key: "category", header: "Category", cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
+    { key: "guestName", header: "Guest", primary: true, hideOnMobile: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
+    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
     { key: "rsvpStatus", header: "RSVP", cell: (r) => <Badge variant={rsvpBadge(r.rsvpStatus).variant}>{rsvpBadge(r.rsvpStatus).label}</Badge> },
-    { key: "rsvpRespondedAt", header: "Responded", cell: (r) => <span className="text-fg-secondary">{r.rsvpRespondedAt ? formatDateTime(r.rsvpRespondedAt) : "—"}</span> },
+    { key: "rsvpRespondedAt", header: "Responded", cell: (r) => <span className="text-fg-secondary">{r.rsvpRespondedAt ? formatDateTime(r.rsvpRespondedAt) : "Not responded"}</span> },
   ];
 
   const exportReport = (format: "csv" | "xlsx") => {
