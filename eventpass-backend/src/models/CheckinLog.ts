@@ -25,6 +25,7 @@ const checkinLogSchema = new Schema<ICheckinLog>(
 );
 
 checkinLogSchema.index({ eventId: 1, createdAt: -1 });
+checkinLogSchema.index({ eventId: 1, result: 1, createdAt: -1 });
 checkinLogSchema.index({ guestId: 1 });
 
 export const CheckinLog = model<ICheckinLog>('CheckinLog', checkinLogSchema);

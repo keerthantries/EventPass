@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 const baseEventFields = {
-  // Only the name is required to create an event — every other field is optional.
   name: z.string().min(2).max(150),
   description: z.string().max(2000).optional(),
   type: z.string().max(50).optional().or(z.literal('')),
@@ -15,6 +14,19 @@ const baseEventFields = {
   bannerImage: z.string().optional(),
   coverImage: z.string().optional(),
   logo: z.string().optional(),
+
+  brideName: z.string().max(100).optional(),
+  groomName: z.string().max(100).optional(),
+  dressCode: z.string().max(200).optional(),
+  weddingWebsiteUrl: z.string().url().max(500).optional().or(z.literal('')),
+  invitationBackgroundImage: z.string().optional(),
+  invitationMessage: z.string().max(5000).optional(),
+
+  venueAddress: z.string().max(500).optional(),
+  guestArrivalTime: z.string().max(20).optional(),
+  bismillahImageUrl: z.string().url().max(1000).optional().or(z.literal('')),
+  quranVerse: z.string().max(500).optional(),
+  quranReference: z.string().max(100).optional(),
 };
 
 const eventConfigFields = {

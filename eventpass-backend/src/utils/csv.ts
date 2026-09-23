@@ -4,10 +4,17 @@ import ExcelJS from 'exceljs';
 
 export interface ParsedGuestRow {
   row: number;
+  firstName?: string;
+  lastName?: string;
   fullName?: string;
   email?: string;
   phone?: string;
   category?: string;
+  partyId?: string;
+  partyName?: string;
+  side?: string;
+  isVip?: boolean;
+  isImmediateFamily?: boolean;
   notes?: string;
 }
 
@@ -15,20 +22,59 @@ const HEADER_MAP: Record<string, keyof Omit<ParsedGuestRow, 'row'>> = {
   'full name': 'fullName',
   name: 'fullName',
   'guest name': 'fullName',
+  'first name': 'firstName',
+  'last name': 'lastName',
   email: 'email',
   phone: 'phone',
   category: 'category',
+  'party/family id': 'partyId',
+  'party/family name': 'partyName',
+  'party id': 'partyId',
+  'party name': 'partyName',
+  party: 'partyName',
+  family: 'partyName',
+  'family name': 'partyName',
+  "bride's family": 'side',
+  "groom's family": 'side',
+  bride: 'side',
+  groom: 'side',
+  side: 'side',
+  vip: 'isVip',
+  'immediate family': 'isImmediateFamily',
   notes: 'notes',
 };
+
+const SIDE_MAP: Record<string, string> = {
+  "bride's family": 'Bride',
+  bride: 'Bride',
+  "groom's family": 'Groom',
+  groom: 'Groom',
+};
+
+const TRUTHY_VALUES = new Set(['yes', 'true', '1', 'x', '✓', 'y']);
 
 function mapRow(raw: Record<string, string>, rowNum: number): ParsedGuestRow {
   const mapped: ParsedGuestRow = { row: rowNum };
   for (const [header, value] of Object.entries(raw)) {
+    if (value === undefined || value === null || String(value).trim() === '') continue;
     const field = HEADER_MAP[header];
-    if (field && value !== undefined && value !== null && String(value).trim() !== '') {
-      (mapped as any)[field] = String(value).trim();
+    if (!field) continue;
+
+    const trimmed = String(value).trim();
+
+    if (field === 'isVip' || field === 'isImmediateFamily') {
+      (mapped as any)[field] = TRUTHY_VALUES.has(trimmed.toLowerCase());
+    } else if (field === 'side') {
+      (mapped as any)[field] = SIDE_MAP[trimmed.toLowerCase()] ?? trimmed;
+    } else {
+      (mapped as any)[field] = trimmed;
     }
   }
+
+  if (!mapped.fullName && mapped.firstName) {
+    mapped.fullName = [mapped.firstName, mapped.lastName].filter(Boolean).join(' ');
+  }
+
   return mapped;
 }
 

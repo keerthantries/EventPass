@@ -4,6 +4,7 @@ import { Event } from '../models/Event';
 import { EventConfig } from '../models/EventConfig';
 import { FormSchema } from '../models/FormSchema';
 import { FormResponse } from '../models/FormResponse';
+import { Party } from '../models/Party';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { sendSuccess } from '../utils/apiResponse';
 import { ApiError } from '../utils/ApiError';
@@ -12,7 +13,7 @@ import { generateQrImage } from '../utils/qr';
 
 /** GET /public/invite/:token */
 export const getInvitation = asyncHandler(async (req: Request, res: Response) => {
-  const guest = await Guest.findOne({ invitationToken: req.params.token });
+  const guest = await Guest.findOne({ invitationToken: req.params.token }).populate('partyId', 'name side');
   if (!guest) throw ApiError.notFound('Invitation link is invalid.');
 
   const [event, config] = await Promise.all([
@@ -21,8 +22,9 @@ export const getInvitation = asyncHandler(async (req: Request, res: Response) =>
   ]);
   if (!event || !config) throw ApiError.notFound('Invitation link is invalid.');
 
-  if (guest.invitationStatus === 'pending') {
+  if (guest.invitationStatus === 'not_sent' || guest.invitationStatus === 'sent') {
     guest.invitationStatus = 'opened';
+    guest.invitationOpenedAt = new Date();
     await guest.save();
   }
 
@@ -32,18 +34,40 @@ export const getInvitation = asyncHandler(async (req: Request, res: Response) =>
     formSchemaFields = schema?.fields ?? [];
   }
 
+  const partyData = (guest as any).partyId && typeof (guest as any).partyId === 'object' ? (guest as any).partyId : null;
+
   return sendSuccess(res, {
     event: {
       name: event.name,
+      brideName: event.brideName,
+      groomName: event.groomName,
+      dressCode: event.dressCode,
+      weddingWebsiteUrl: event.weddingWebsiteUrl,
       banner: event.bannerImage,
+      invitationBackgroundImage: event.invitationBackgroundImage,
       venue: event.venue,
+      venueAddress: event.venueAddress,
       mapLink: event.mapLink,
       startDate: event.startDate,
       startTime: event.startTime,
       endTime: event.endTime,
+      guestArrivalTime: event.guestArrivalTime,
       branding: event.branding,
+      invitationMessage: event.invitationMessage,
+      bismillahImageUrl: event.bismillahImageUrl,
+      quranVerse: event.quranVerse,
+      quranReference: event.quranReference,
     },
-    guest: { fullName: guest.fullName, rsvpStatus: guest.rsvpStatus },
+    guest: {
+      firstName: guest.firstName,
+      lastName: guest.lastName,
+      fullName: guest.fullName,
+      rsvpStatus: guest.rsvpStatus,
+      qrToken: guest.qrToken,
+      partyName: partyData?.name ?? null,
+      side: guest.side ?? partyData?.side ?? null,
+      invitationToken: guest.invitationToken,
+    },
     config: { modules: config.modules, rsvpMode: config.rsvpMode },
     formSchema: formSchemaFields,
   });

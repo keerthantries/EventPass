@@ -5,6 +5,7 @@ import { nestedCategoryRoutes, flatCategoryRoutes } from './category.routes';
 import { nestedGuestRoutes, flatGuestRoutes } from './guest.routes';
 import formRoutes from './form.routes';
 import publicInviteRoutes from './publicInvite.routes';
+import publicFamilyRoutes from './publicFamily.routes';
 import checkinRoutes, { nestedCheckinRoutes } from './checkin.routes';
 import dashboardRoutes from './dashboard.routes';
 import reportRoutes from './report.routes';
@@ -29,5 +30,6 @@ router.use('/checkin', checkinRoutes);
 
 // Public, token-based, no JWT
 router.use('/public/invite', publicInviteRoutes);
+router.use('/public/family', publicFamilyRoutes);
 
 export default router;

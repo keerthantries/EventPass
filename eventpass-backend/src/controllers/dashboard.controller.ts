@@ -5,14 +5,23 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { sendSuccess } from '../utils/apiResponse';
 import { getOwnedEvent } from './event.controller';
 
-/** GET /events/:eventId/dashboard — summary cards + widgets (API spec §1.5). */
+/** GET /events/:eventId/dashboard — summary cards + widgets */
 export const getDashboard = asyncHandler(async (req: Request, res: Response) => {
   const event = await getOwnedEvent(req.params.eventId, req);
   const eventId = event._id;
 
-  const [totalGuests, invitationsSent, rsvpAccepted, rsvpDeclined, pendingResponses, presentGuests] = await Promise.all([
+  const [
+    totalGuests,
+    invitationsSent,
+    invitationsOpened,
+    rsvpAccepted,
+    rsvpDeclined,
+    pendingResponses,
+    presentGuests,
+  ] = await Promise.all([
     Guest.countDocuments({ eventId }),
     Guest.countDocuments({ eventId, invitationStatus: { $in: ['sent', 'opened'] } }),
+    Guest.countDocuments({ eventId, invitationStatus: 'opened' }),
     Guest.countDocuments({ eventId, rsvpStatus: 'accepted' }),
     Guest.countDocuments({ eventId, rsvpStatus: 'declined' }),
     Guest.countDocuments({ eventId, rsvpStatus: 'pending' }),
@@ -54,6 +63,7 @@ export const getDashboard = asyncHandler(async (req: Request, res: Response) => 
     summary: {
       totalGuests,
       invitationsSent,
+      invitationsOpened,
       rsvpAccepted,
       rsvpDeclined,
       pendingResponses,
