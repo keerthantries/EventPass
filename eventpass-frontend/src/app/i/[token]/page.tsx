@@ -26,10 +26,24 @@ function QrCodeImage({ token, size = 180 }: { token: string; size?: number }) {
   }, [token, size]);
 
   if (!src) {
-    return <div className="rounded-lg bg-white/10" style={{ width: size, height: size }} />;
+    return (
+      <div
+        className="rounded-lg bg-white/10"
+        style={{ width: "min(55vw, 180px)", height: "min(55vw, 180px)" }}
+      />
+    );
   }
 
-  return <img src={src} alt="QR code" width={size} height={size} className="rounded-lg" />;
+  return (
+    <img
+      src={src}
+      alt="QR code"
+      width={size}
+      height={size}
+      className="rounded-lg"
+      style={{ width: "min(55vw, 180px)", height: "auto" }}
+    />
+  );
 }
 
 function formatDateParts(dateString: string): { dayName: string; month: string; dayNumber: number; year: number } {
@@ -42,6 +56,17 @@ function formatDateParts(dateString: string): { dayName: string; month: string; 
   const dayNumber = date.getUTCDate();
   const year = date.getUTCFullYear();
   return { dayName, month, dayNumber, year };
+}
+
+function formatClock(value?: string): string {
+  if (!value) return "";
+  const m = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return value;
+  const h = Number(m[1]);
+  const min = m[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${min} ${ampm}`;
 }
 
 function Particles() {
@@ -105,7 +130,7 @@ export default function InvitePage({
   }
 
   const { event: eventData, guest } = data;
-  const websiteUrl = eventData.weddingWebsiteUrl || "#";
+  const websiteUrl = eventData.weddingWebsiteUrl || "https://withjoy.com/ikramhalane-and-nebilyusuf";
   const { dayName, month, dayNumber, year } = formatDateParts(eventData.startDate);
 
   const brideName = eventData.brideName || "Ikram Halane";
@@ -113,6 +138,8 @@ export default function InvitePage({
   const venue = eventData.venue || "Woodbine Banquet Hall";
   const venueAddress = eventData.venueAddress || "30 Vice Regent Blvd, Etobicoke, ON M9W 7A4";
   const guestArrivalTime = eventData.guestArrivalTime || "6:00PM";
+  const dressCode = eventData.dressCode || "Traditional Clothing / Black Tie";
+  const startTimeLabel = formatClock(eventData.startTime);
   const quranVerse = eventData.quranVerse || "\"AND WE CREATED YOU IN PAIRS.\"";
   const quranReference = eventData.quranReference || "QURAN 78:8";
   const bismillahImageUrl = eventData.bismillahImageUrl || "https://res.cloudinary.com/cvuqo9hg/image/upload/v1789584106/Gemini_Generated_Image_7xmguy7xmguy7xmg-removebg-preview.png";
@@ -133,7 +160,8 @@ export default function InvitePage({
 
         .loading-container {
           background: linear-gradient(135deg, #f5f0e6 0%, #e5e5e5 50%, #f5f0e6 100%);
-          display: flex; justify-content: center; align-items: center; min-height: 100vh;
+          display: flex; justify-content: center; align-items: center;
+          min-height: 100vh; min-height: 100dvh;
         }
         .spinner {
           width: 40px; height: 40px; border: 2px solid #c59b27;
@@ -143,7 +171,8 @@ export default function InvitePage({
 
         .error-container {
           background: linear-gradient(135deg, #f5f0e6 0%, #e5e5e5 50%, #f5f0e6 100%);
-          display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;
+          display: flex; justify-content: center; align-items: center;
+          min-height: 100vh; min-height: 100dvh; padding: 20px;
         }
         .error-icon { width: 48px; height: 48px; color: #ef4444; margin: 0 auto; }
         .error-title { margin-top: 16px; font-size: 20px; font-weight: 600; color: #1f2937; text-align: center; }
@@ -152,7 +181,7 @@ export default function InvitePage({
         .invite-page {
           background: linear-gradient(160deg, #f5f0e6 0%, #e8e2d4 30%, #ddd6c6 60%, #e8e2d4 100%);
           display: flex; justify-content: center; align-items: center;
-          min-height: 100vh; padding: 20px; font-family: "Cinzel", serif;
+          min-height: 100vh; min-height: 100dvh; padding: 20px; font-family: "Cinzel", serif;
           position: relative;
         }
 
@@ -169,11 +198,13 @@ export default function InvitePage({
         .invite-wrapper {
           display: flex; flex-direction: column; align-items: center; gap: 20px;
           width: 100%; max-width: 500px; position: relative; z-index: 2;
+          padding-bottom: env(safe-area-inset-bottom);
         }
 
         /* Particles */
         .particles-container {
-          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          position: fixed; top: 0; left: 0; width: 100vw;
+          height: 100vh; height: 100dvh;
           pointer-events: none; z-index: 1; overflow: hidden;
         }
         .particle {
@@ -222,6 +253,16 @@ export default function InvitePage({
           filter: drop-shadow(0 0 6px rgba(197,155,39,0.5));
         }
 
+        @media (prefers-reduced-motion: reduce) {
+          .particles-container { display: none; }
+          .animate-fade-in { animation: none !important; opacity: 1; transform: none; }
+          .heart-icon { animation: none; }
+          .card-inner-border { animation: none; }
+          .spinner { animation: none; }
+          .website-btn:hover, .website-btn:active { transform: none; }
+          .website-btn:active::after { animation: none; display: none; }
+        }
+
         .gold-text {
           color: #b58d3d;
           background: linear-gradient(135deg, #9a7428 0%, #d4af37 40%, #8a641c 70%, #c59b27 100%);
@@ -268,6 +309,8 @@ export default function InvitePage({
         .date-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #c59b27, transparent); }
         .day-number { font-family: "Playfair Display", serif; font-size: 38px; font-weight: 400; line-height: 1; }
         .guest-arrival { font-family: "Cinzel", serif; font-size: 8.5px; letter-spacing: 1.5px; margin-top: 4px; font-weight: 600; }
+        .start-time { font-family: "Cinzel", serif; font-size: 9.5px; letter-spacing: 2px; margin-top: 4px; font-weight: 600; }
+        .dress-code { font-family: "Cinzel", serif; font-size: 8px; letter-spacing: 1.5px; margin-top: 8px; font-weight: 600; text-align: center; }
 
         .venue-container { margin-top: 2px; }
         .venue-name { font-family: "Alex Brush", cursive; font-size: 24px; margin-bottom: 2px; }
@@ -284,7 +327,7 @@ export default function InvitePage({
           transition: transform 0.3s ease;
         }
         .guest-card:hover { transform: translateY(-2px); }
-        .guest-card-label { font-family: "Cinzel", serif; font-size: 9px; letter-spacing: 2px; font-weight: 600; margin-bottom: 4px; }
+        .guest-card-label { font-family: "Cinzel", serif; font-size: 10px; letter-spacing: 2px; font-weight: 600; margin-bottom: 4px; }
         .guest-card-name { font-family: "Alex Brush", cursive; font-size: 28px; line-height: 1.2; }
 
         .qr-section {
@@ -292,15 +335,15 @@ export default function InvitePage({
           box-shadow: 0 4px 15px rgba(0,0,0,0.06); text-align: center;
           border: 1px solid rgba(197,155,39,0.2); border-radius: 12px;
         }
-        .qr-label { font-family: "Cinzel", serif; font-size: 9px; letter-spacing: 2px; font-weight: 600; margin-bottom: 16px; }
+        .qr-label { font-family: "Cinzel", serif; font-size: 10px; letter-spacing: 2px; font-weight: 600; margin-bottom: 16px; }
         .qr-wrapper {
           display: inline-block; padding: 16px; background: white;
           border: 2px solid #c59b27; border-radius: 12px;
           box-shadow: 0 4px 15px rgba(0,0,0,0.08), 0 0 10px rgba(197,155,39,0.1);
         }
         .qr-name { font-family: "Alex Brush", cursive; font-size: 22px; margin-top: 12px; }
-        .qr-date { font-family: "Cinzel", serif; font-size: 10px; color: #6b7280; margin-top: 4px; }
-        .qr-note { font-family: "Cinzel", serif; font-size: 9px; color: #9ca3af; margin-top: 12px; letter-spacing: 0.5px; }
+        .qr-date { font-family: "Cinzel", serif; font-size: 11px; color: #6b7280; margin-top: 4px; }
+        .qr-note { font-family: "Cinzel", serif; font-size: 10px; color: #9ca3af; margin-top: 12px; letter-spacing: 0.5px; }
 
         .rsvp-accepted, .rsvp-declined, .rsvp-maybe {
           padding: 12px 20px; border-radius: 12px; font-family: "Cinzel", serif;
@@ -315,8 +358,9 @@ export default function InvitePage({
           display: flex; align-items: center; justify-content: center; gap: 8px;
           width: 100%; max-width: 460px; padding: 16px 24px; background-color: #fcfbfa;
           border: 2px solid #c59b27; border-radius: 12px; text-decoration: none;
-          font-family: "Cinzel", serif; font-size: 11px; font-weight: 600; letter-spacing: 1px;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+          font-family: "Cinzel", serif; font-size: 12px; font-weight: 600; letter-spacing: 1px;
+          position: relative; overflow: hidden;
+          transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, background 0.25s ease;
           box-shadow: 0 4px 15px rgba(0,0,0,0.06);
         }
         .website-btn:hover {
@@ -324,9 +368,23 @@ export default function InvitePage({
           box-shadow: 0 6px 20px rgba(197,155,39,0.15);
           transform: translateY(-2px);
         }
+        .website-btn:active {
+          transform: translateY(0) scale(0.97);
+          box-shadow: 0 2px 8px rgba(197,155,39,0.2);
+        }
+        .website-btn:active::after {
+          content: ""; position: absolute; left: 50%; top: 50%;
+          width: 12px; height: 12px; border-radius: 50%; pointer-events: none;
+          background: rgba(197,155,39,0.45);
+          transform: translate(-50%, -50%) scale(0);
+          animation: websiteBtnRipple 0.5s ease-out forwards;
+        }
+        @keyframes websiteBtnRipple {
+          to { transform: translate(-50%, -50%) scale(40); opacity: 0; }
+        }
         .website-btn-icon { width: 16px; height: 16px; }
 
-        .footer-text { font-family: "Cinzel", serif; font-size: 10px; color: #b0a898; letter-spacing: 1px; }
+        .footer-text { font-family: "Cinzel", serif; font-size: 11px; color: #b0a898; letter-spacing: 1px; }
       `}</style>
 
       <div className="invite-page">
@@ -360,20 +418,27 @@ export default function InvitePage({
               </div>
 
               <div className="date-container gold-text animate-fade-in delay-5">
-                <div className="day-name">{dayName}</div>
-                <div className="date-row">
-                  <div className="date-block">
-                    <div className="date-line" />
-                    <span>{month}</span>
-                    <div className="date-line" />
-                  </div>
-                  <div className="day-number">{dayNumber}</div>
-                  <div className="date-block">
-                    <div className="date-line" />
-                    <span>{year}</span>
-                    <div className="date-line" />
-                  </div>
-                </div>
+                {dayNumber > 0 ? (
+                  <>
+                    <div className="day-name">{dayName}</div>
+                    <div className="date-row">
+                      <div className="date-block">
+                        <div className="date-line" />
+                        <span>{month}</span>
+                        <div className="date-line" />
+                      </div>
+                      <div className="day-number">{dayNumber}</div>
+                      <div className="date-block">
+                        <div className="date-line" />
+                        <span>{year}</span>
+                        <div className="date-line" />
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+                {startTimeLabel && (
+                  <div className="start-time">{startTimeLabel}</div>
+                )}
                 {guestArrivalTime && (
                   <div className="guest-arrival">GUEST ARRIVAL {guestArrivalTime}</div>
                 )}
@@ -383,6 +448,9 @@ export default function InvitePage({
                 <div className="venue-name gold-text">{venue}</div>
                 {venueAddress && (
                   <div className="venue-address gold-text">{venueAddress}</div>
+                )}
+                {dressCode && (
+                  <div className="dress-code gold-text">DRESS CODE: {dressCode}</div>
                 )}
               </div>
             </div>
@@ -400,7 +468,9 @@ export default function InvitePage({
                 <QrCodeImage token={guest.qrToken} size={180} />
               </div>
               <div className="qr-name gold-text">{guest.fullName}</div>
-              <div className="qr-date">{dayName} {month} {dayNumber}, {year}</div>
+              {dayNumber > 0 ? (
+                <div className="qr-date">{dayName} {month} {dayNumber}, {year}</div>
+              ) : null}
               <div className="qr-note">This QR code is unique to you. Please have it available upon arrival.</div>
             </div>
           )}
@@ -421,10 +491,10 @@ export default function InvitePage({
             </div>
           )}
 
-          {websiteUrl && websiteUrl !== "#" && (
-            <Link href={websiteUrl} target="_blank" className="website-btn gold-text animate-fade-in delay-7">
-              <ExternalLink className="website-btn-icon" style={{ WebkitTextFillColor: "#c59b27" }} />
-              <span>VIEW WEDDING WEBSITE</span>
+          {websiteUrl && (
+            <Link href={websiteUrl} target="_blank" className="website-btn animate-fade-in delay-7">
+              <ExternalLink className="website-btn-icon" style={{ color: "#c59b27" }} />
+              <span className="gold-text">VIEW WEDDING WEBSITE</span>
             </Link>
           )}
 

@@ -26,11 +26,35 @@ const routeTitles: Record<string, string> = {
   "/settings": "Settings",
 };
 
+const eventSegmentTitles: Record<string, string> = {
+  overview: "Overview",
+  guests: "Guests",
+  categories: "Categories",
+  forms: "Forms",
+  invitations: "Invitations",
+  attendance: "Check-In",
+  reports: "Reports",
+  settings: "Settings",
+};
+
+function titleFor(pathname: string): string {
+  const exact = routeTitles[pathname];
+  if (exact) return exact;
+  const eventMatch = pathname.match(/^\/events\/[^/]+(?:\/([^/]+))?/);
+  if (eventMatch) {
+    const segment = eventMatch[1];
+    if (!segment) return "Event";
+    return eventSegmentTitles[segment] ?? "Event";
+  }
+  if (pathname.startsWith("/events")) return "Events";
+  return "EventPass";
+}
+
 export function Topbar({ onOpenMobileNav }: TopbarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const title = routeTitles[pathname] ?? "EventPass";
+  const title = titleFor(pathname);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur">

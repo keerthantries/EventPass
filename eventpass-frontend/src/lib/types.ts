@@ -97,6 +97,8 @@ export interface Party {
   contactEmail?: string;
   contactPhone?: string;
   token: string;
+  externalId?: string | null;
+  guestCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -105,12 +107,14 @@ export type RsvpStatus = "pending" | "accepted" | "declined" | "maybe";
 export type AttendanceStatus = "absent" | "present";
 export type ApprovalStatus = "not_required" | "pending" | "approved" | "rejected";
 export type InvitationStatus = "not_sent" | "sent" | "opened";
+export type InvitationChannel = "email" | "sms" | "whatsapp" | "other";
 
 export interface Guest {
   _id: string;
   eventId: string;
   categoryId?: string | null;
   partyId?: string | null;
+  partyName?: string;
   fullName: string;
   firstName?: string;
   lastName?: string;
@@ -124,6 +128,7 @@ export interface Guest {
   invitationStatus: InvitationStatus;
   invitationSentAt?: string | null;
   invitationOpenedAt?: string | null;
+  invitationChannel?: InvitationChannel | null;
   rsvpStatus: RsvpStatus;
   rsvpRespondedAt?: string | null;
   approvalStatus: ApprovalStatus;
@@ -180,6 +185,31 @@ export interface CheckinResult {
   };
   attendanceStatus: AttendanceStatus;
   checkInTime: string;
+}
+
+export interface DuplicateCheckinDetails {
+  guestId: string;
+  fullName: string;
+  partyName?: string | null;
+  side?: string;
+  isVip?: boolean;
+  rsvpStatus?: RsvpStatus;
+  checkInTime?: string | null;
+}
+
+export interface CheckinLookup {
+  guestId: string;
+  guest: {
+    fullName: string;
+    firstName?: string;
+    category: string | null;
+    partyName?: string | null;
+    side?: string;
+    isVip?: boolean;
+    rsvpStatus?: RsvpStatus;
+  };
+  attendanceStatus: AttendanceStatus;
+  checkInTime?: string | null;
 }
 
 export interface CheckinSearchResult {

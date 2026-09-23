@@ -31,6 +31,28 @@ export function formatTime(value: string | Date | null | undefined): string {
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+export function formatClock(value?: string | null): string {
+  if (!value) return "";
+  const m = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return value;
+  const h = Number(m[1]);
+  const min = m[2];
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${min} ${ampm}`;
+}
+
+export function smsHref(phone: string | null | undefined, body: string): string {
+  const num = (phone ?? "").replace(/[^\d+]/g, "");
+  let isIOS = false;
+  if (typeof navigator !== "undefined") {
+    const ua = navigator.userAgent;
+    isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && navigator.maxTouchPoints > 1);
+  }
+  const sep = isIOS ? "&" : "?";
+  return `sms:${num}${sep}body=${encodeURIComponent(body)}`;
+}
+
 export function initials(name: string): string {
   return name
     .split(/\s+/)

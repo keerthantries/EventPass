@@ -16,13 +16,13 @@ export const ModalContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-surface shadow-modal animate-scale-in",
-        "max-h-[85vh] overflow-y-auto",
+        "fixed left-1/2 top-1/2 z-50 flex w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg border border-border bg-surface shadow-modal animate-scale-in",
+        "max-h-[85dvh] overflow-hidden",
         className
       )}
       {...props}
     >
-      {children}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
         <X className="size-4" />
         <span className="sr-only">Close</span>

@@ -6,14 +6,14 @@ import { Modal, ModalContent, ModalBody } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
-import type { Guest, EventDetail } from "@/lib/types";
+import type { Guest, EventDetail, InvitationChannel } from "@/lib/types";
 
 interface InvitationShareModalProps {
   guest: Guest | null;
   event?: EventDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMarkSent?: (guestId: string) => Promise<void>;
+  onMarkSent?: (guestId: string, channel?: InvitationChannel) => Promise<void>;
 }
 
 function formatDateParts(dateString: string): { dayName: string; month: string; dayNumber: number; year: number } {
@@ -47,11 +47,11 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
     }
   };
 
-  const handleMarkSent = async () => {
+  const handleMarkSent = async (channel?: InvitationChannel) => {
     if (!guest || !onMarkSent || isMarkingSent) return;
     setIsMarkingSent(true);
     try {
-      await onMarkSent(guest._id);
+      await onMarkSent(guest._id, channel);
       toast({ title: "Invitation marked as sent", variant: "success" });
     } catch {
       toast({ title: "Could not mark as sent", variant: "error" });
@@ -65,6 +65,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
   const venue = event?.venue || "Woodbine Banquet Hall";
   const venueAddress = event?.venueAddress || "30 Vice Regent Blvd, Etobicoke, ON M9W 7A4";
   const guestArrivalTime = event?.guestArrivalTime || "6:00PM";
+  const dressCode = event?.dressCode || "Traditional Clothing / Black Tie";
   const quranVerse = event?.quranVerse || "\"AND WE CREATED YOU IN PAIRS.\"";
   const quranReference = event?.quranReference || "QURAN 78:8";
   const bismillahImageUrl = event?.bismillahImageUrl || "https://res.cloudinary.com/cvuqo9hg/image/upload/v1789584106/Gemini_Generated_Image_7xmguy7xmguy7xmg-removebg-preview.png";
@@ -81,7 +82,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
   const openWhatsApp = () => {
     const phone = guest?.phone ? guest.phone.replace(/[^\d]/g, "") : "";
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(shareMessage)}`, "_blank", "noopener");
-    handleMarkSent();
+    handleMarkSent("whatsapp");
   };
 
   const openMail = () => {
@@ -89,7 +90,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
     const body = encodeURIComponent(shareMessage);
     const to = guest?.email ?? "";
     window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_self");
-    handleMarkSent();
+    handleMarkSent("email");
   };
 
   const openNativeShare = async () => {
@@ -98,7 +99,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
     }
-    handleMarkSent();
+    handleMarkSent("other");
   };
 
   return (
@@ -312,6 +313,11 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
                 <div className="modal-venue-name modal-gold-text">{venue}</div>
                 {venueAddress && (
                   <div className="modal-venue-address modal-gold-text">{venueAddress}</div>
+                )}
+                {dressCode && (
+                  <div className="modal-guest-arrival modal-gold-text" style={{ marginTop: 3 }}>
+                    DRESS CODE: {dressCode}
+                  </div>
                 )}
               </div>
             </div>

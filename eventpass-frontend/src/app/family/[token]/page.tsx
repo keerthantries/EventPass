@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Users, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getFamily, type FamilyPageData } from "@/lib/queries/family";
-import { cn, formatDate, formatTime } from "@/lib/utils";
+import { cn, formatDate, formatClock } from "@/lib/utils";
 
 export default function FamilyPage({
   params,
@@ -20,7 +20,7 @@ export default function FamilyPage({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#1a1a2e]">
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#1a1a2e]">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
       </div>
     );
@@ -28,7 +28,7 @@ export default function FamilyPage({
 
   if (isError || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#1a1a2e] p-6">
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-[#0a0a14] to-[#1a1a2e] p-6">
         <div className="max-w-md text-center">
           <Users className="mx-auto size-12 text-white/30" />
           <h1 className="mt-4 text-xl font-semibold text-white">Family Not Found</h1>
@@ -45,13 +45,15 @@ export default function FamilyPage({
 
   return (
     <div
-      className="min-h-screen"
+      className="relative min-h-dvh"
       style={{
         background: `linear-gradient(160deg, ${eventData.branding?.secondaryColor || "#1a1a2e"} 0%, #0a0a14 55%)`,
         color: "#fff",
       }}
     >
-      <div className="mx-auto max-w-lg px-4 py-8 sm:py-12">
+      {/* Dark overlay so white text stays readable over any branding color */}
+      <div className="pointer-events-none absolute inset-0 bg-black/45" aria-hidden />
+      <div className="relative z-10 mx-auto max-w-lg px-4 pb-[env(safe-area-inset-bottom)] py-8 sm:py-12">
         {/* Header */}
         <div className="text-center">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/40">
@@ -102,7 +104,7 @@ export default function FamilyPage({
               {guest.invitationToken && (
                 <Link
                   href={`/i/${guest.invitationToken}`}
-                  className="rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-80"
+                  className="rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
                   style={{ background: primary }}
                 >
                   View Pass
@@ -115,7 +117,7 @@ export default function FamilyPage({
         {/* Event Info */}
         <div className="mt-10 text-center text-sm text-white/40">
           <p>{formatDate(eventData.startDate)}</p>
-          {eventData.startTime && <p>{formatTime(eventData.startTime)}</p>}
+          {eventData.startTime && <p>{formatClock(eventData.startTime)}</p>}
           {eventData.venue && <p>{eventData.venue}</p>}
         </div>
 

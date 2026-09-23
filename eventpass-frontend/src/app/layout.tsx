@@ -10,6 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://event-pass-gold.vercel.app"),
   title: "EventPass",
   description: "Configurable event invitations, RSVP, QR check-in and attendance.",
 };

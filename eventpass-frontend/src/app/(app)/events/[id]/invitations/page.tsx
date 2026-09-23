@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { cn, formatDate, formatTime, initials } from "@/lib/utils";
+import { cn, formatDate, formatClock, initials, smsHref } from "@/lib/utils";
 import type { Guest, EventDetail } from "@/lib/types";
 
 export default function InvitationsPage() {
@@ -240,7 +240,7 @@ export default function InvitationsPage() {
         event={event}
         open={!!shareGuest}
         onOpenChange={(o) => !o && setShareGuest(null)}
-        onMarkSent={markSentMutation.mutateAsync}
+        onMarkSent={(id, channel) => markSentMutation.mutateAsync({ id, channel })}
       />
     </div>
   );
@@ -268,6 +268,11 @@ function InvitationRow({
   };
   const status = statusConfig[guest.invitationStatus] || statusConfig.not_sent;
   const StatusIcon = status.icon;
+  const channelLabel = guest.invitationStatus === "opened" || guest.invitationStatus === "sent"
+    ? guest.invitationChannel
+      ? ` · ${guest.invitationChannel === "sms" ? "SMS" : guest.invitationChannel.charAt(0).toUpperCase() + guest.invitationChannel.slice(1)}`
+      : ""
+    : "";
 
   return (
     <div
@@ -302,7 +307,7 @@ function InvitationRow({
 
       <Badge variant={status.variant} className="shrink-0">
         <StatusIcon className="mr-1 size-3" />
-        {status.label}
+        {status.label}{channelLabel}
       </Badge>
 
       {guest.invitationToken && (
@@ -326,7 +331,7 @@ function InvitationShareInline({
   event?: EventDetail;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMarkSent?: (guestId: string) => Promise<void>;
+  onMarkSent?: (guestId: string, channel?: import("@/lib/types").InvitationChannel) => Promise<void>;
 }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -353,11 +358,11 @@ function InvitationShareInline({
     }
   };
 
-  const handleMarkSent = async () => {
+  const handleMarkSent = async (channel?: import("@/lib/types").InvitationChannel) => {
     if (!onMarkSent || isMarkingSent) return;
     setIsMarkingSent(true);
     try {
-      await onMarkSent(guest._id);
+      await onMarkSent(guest._id, channel);
       toast({ title: "Invitation marked as sent", variant: "success" });
     } catch {
       toast({ title: "Could not mark as sent", variant: "error" });
@@ -370,7 +375,7 @@ function InvitationShareInline({
     `You're invited to ${event?.brideName || event?.name} & ${event?.groomName || ""}'s wedding!`,
     "",
     event?.startDate ? `Date: ${formatDate(event.startDate)}` : "",
-    event?.startTime ? `Time: ${formatTime(event.startTime)}` : "",
+    event?.startTime ? `Time: ${formatClock(event.startTime)}` : "",
     event?.venue ? `Venue: ${event.venue}` : "",
     "",
     "RSVP here:",
@@ -378,20 +383,20 @@ function InvitationShareInline({
   ].filter(Boolean).join("\n");
 
   const openSms = () => {
-    window.open(`sms:?body=${encodeURIComponent(shareText)}`, "_self");
-    handleMarkSent();
+    window.open(smsHref(undefined, shareText), "_self");
+    handleMarkSent("sms");
   };
 
   const openEmail = () => {
     const subject = encodeURIComponent(`You're invited to ${event?.brideName || event?.name} & ${event?.groomName || ""}'s Wedding`);
     const body = encodeURIComponent(shareText);
     window.open(`mailto:?subject=${subject}&body=${body}`, "_self");
-    handleMarkSent();
+    handleMarkSent("email");
   };
 
   const openWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener");
-    handleMarkSent();
+    handleMarkSent("whatsapp");
   };
 
   const openNativeShare = async () => {
@@ -404,7 +409,7 @@ function InvitationShareInline({
     } catch (err) {
       if ((err as Error)?.name === "AbortError") return;
     }
-    handleMarkSent();
+    handleMarkSent("other");
   };
 
   return (

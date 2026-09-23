@@ -13,7 +13,10 @@ interface QrScannerProps {
 
 const CONFIG = {
   fps: 10,
-  qrbox: { width: 220, height: 220 },
+  qrbox: (width: number, height: number) => {
+    const side = Math.max(120, Math.floor(Math.min(width, height) * 0.75));
+    return { width: side, height: side };
+  },
   aspectRatio: 1.0,
 };
 
@@ -166,7 +169,7 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
         <div className="flex items-center gap-2">
           {scanning ? (
             <>
-              <Button variant="secondary" size="icon" onClick={toggleTorch} title="Toggle flashlight" aria-label="Toggle flashlight">
+              <Button variant="secondary" size="icon" className="size-10" onClick={toggleTorch} title="Toggle flashlight" aria-label="Toggle flashlight">
                 <Zap className={cn("size-4", torchOn && "text-warning")} />
               </Button>
               <Button variant="secondary" size="sm" onClick={() => void stopScanner()}>

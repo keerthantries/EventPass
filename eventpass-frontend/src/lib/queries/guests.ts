@@ -59,6 +59,7 @@ export async function bulkGuestAction(
     isVip?: boolean;
     isImmediateFamily?: boolean;
     partyId?: string;
+    channel?: "email" | "sms" | "whatsapp" | "other";
   }
 ): Promise<{ updated: number }> {
   const { data } = await apiRequest<{ updated: number }>(`/events/${eventId}/guests/bulk`, { method: "PATCH", body: payload });
@@ -84,11 +85,11 @@ export async function approveGuest(id: string, decision: "approved" | "rejected"
   await apiRequest(`/guests/${id}/approve`, { method: "POST", body: { decision } });
 }
 
-export async function markGuestSent(id: string): Promise<void> {
-  await apiRequest(`/guests/${id}/mark-sent`, { method: "POST" });
+export async function markGuestSent(id: string, channel?: "email" | "sms" | "whatsapp" | "other"): Promise<void> {
+  await apiRequest(`/guests/${id}/mark-sent`, { method: "POST", body: channel ? { channel } : {} });
 }
 
 export async function listParties(eventId: string): Promise<Party[]> {
-  const { data } = await apiRequest<Party[]>(`/events/${eventId}/categories`);
+  const { data } = await apiRequest<Party[]>(`/events/${eventId}/parties`);
   return data;
 }

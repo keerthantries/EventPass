@@ -1,6 +1,7 @@
 import { apiRequest } from "@/lib/api";
 import type {
   CheckinResult,
+  CheckinLookup,
   CheckinSearchResult,
   RecentCheckin,
   DashboardData,
@@ -9,6 +10,11 @@ import type {
 } from "@/lib/types";
 import type { ListResult } from "./events";
 
+export async function lookupScan(eventId: string, token: string): Promise<CheckinLookup> {
+  const { data } = await apiRequest<CheckinLookup>(`/checkin/lookup`, { method: "POST", body: { token } });
+  return data;
+}
+
 export async function scanCheckin(eventId: string, token: string): Promise<CheckinResult> {
   const { data } = await apiRequest<CheckinResult>(`/checkin/scan`, { method: "POST", body: { token } });
   return data;
@@ -16,6 +22,22 @@ export async function scanCheckin(eventId: string, token: string): Promise<Check
 
 export async function manualCheckin(eventId: string, guestId: string): Promise<CheckinResult> {
   const { data } = await apiRequest<CheckinResult>(`/checkin/manual/${guestId}`, { method: "POST" });
+  return data;
+}
+
+export async function undoCheckin(guestId: string): Promise<{ guestId: string; fullName: string; attendanceStatus: "absent" }> {
+  const { data } = await apiRequest<{ guestId: string; fullName: string; attendanceStatus: "absent" }>(
+    `/checkin/undo/${guestId}`,
+    { method: "POST" }
+  );
+  return data;
+}
+
+export async function reentryCheckin(guestId: string): Promise<CheckinResult & { reentryAllowed: boolean }> {
+  const { data } = await apiRequest<CheckinResult & { reentryAllowed: boolean }>(
+    `/checkin/reentry/${guestId}`,
+    { method: "POST" }
+  );
   return data;
 }
 

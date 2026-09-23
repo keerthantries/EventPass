@@ -25,11 +25,15 @@ import {
   generateGuestQr,
   approveGuest,
   markGuestSent,
+  listParties,
 } from "@/lib/queries/guests";
 import { getFormSchema, putFormSchema, listFormResponses } from "@/lib/queries/forms";
 import {
+  lookupScan,
   scanCheckin,
   manualCheckin,
+  undoCheckin,
+  reentryCheckin,
   searchCheckin,
   recentCheckins,
   getDashboard,
@@ -44,7 +48,7 @@ import {
   createSecurityStaff,
   deactivateSecurityStaff,
 } from "@/lib/queries/invite";
-import type { EventListItem, EventDetail, Guest, Category } from "@/lib/types";
+import type { EventListItem, EventDetail, Guest, Category, InvitationChannel } from "@/lib/types";
 
 export const qk = {
   events: (params?: Record<string, string>) =>
@@ -64,6 +68,7 @@ export const qk = {
   rsvpReport: (eventId: string, params?: Record<string, string>) =>
     params && Object.keys(params).length > 0 ? (["rsvp-report", eventId, params] as const) : (["rsvp-report", eventId] as const),
   invitation: (token: string) => ["invitation", token] as const,
+  parties: (eventId: string) => ["parties", eventId] as const,
   team: () => ["team"] as const,
 };
 
@@ -223,6 +228,7 @@ export function useBulkGuestAction(eventId: string) {
       isVip?: boolean;
       isImmediateFamily?: boolean;
       partyId?: string;
+      channel?: InvitationChannel;
     }) => bulkGuestAction(eventId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.guests(eventId) });
@@ -261,8 +267,18 @@ export function useApproveGuest(eventId: string) {
 export function useMarkGuestSent(eventId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => markGuestSent(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.guests(eventId) }),
+    mutationFn: ({ id, channel }: { id: string; channel?: InvitationChannel }) => markGuestSent(id, channel),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.guests(eventId) });
+      qc.invalidateQueries({ queryKey: qk.dashboard(eventId) });
+    },
+  });
+}
+
+export function useParties(eventId: string) {
+  return useQuery({
+    queryKey: qk.parties(eventId),
+    queryFn: () => listParties(eventId),
   });
 }
 
@@ -288,6 +304,12 @@ export function useFormResponses(eventId: string, params?: Record<string, string
   });
 }
 
+export function useLookupCheckin() {
+  return useMutation({
+    mutationFn: ({ eventId, token }: { eventId: string; token: string }) => lookupScan(eventId, token),
+  });
+}
+
 export function useScanCheckin() {
   const qc = useQueryClient();
   return useMutation({
@@ -295,17 +317,48 @@ export function useScanCheckin() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: qk.dashboard(vars.eventId) });
       qc.invalidateQueries({ queryKey: qk.recent(vars.eventId) });
+      qc.invalidateQueries({ queryKey: qk.guests(vars.eventId) });
     },
   });
 }
 
-export function useManualCheckin() {
+export function useManualCheckin(eventId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ eventId, guestId }: { eventId: string; guestId: string }) => manualCheckin(eventId, guestId),
+    mutationFn: ({ eventId: eid, guestId }: { eventId: string; guestId: string }) => manualCheckin(eid, guestId),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: qk.dashboard(vars.eventId) });
       qc.invalidateQueries({ queryKey: qk.recent(vars.eventId) });
+      qc.invalidateQueries({ queryKey: qk.guests(vars.eventId) });
+      if (eventId) qc.invalidateQueries({ queryKey: qk.guests(eventId) });
+    },
+  });
+}
+
+export function useUndoCheckin(eventId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (guestId: string) => undoCheckin(guestId),
+    onSuccess: (_data, guestId) => {
+      if (eventId) {
+        qc.invalidateQueries({ queryKey: qk.dashboard(eventId) });
+        qc.invalidateQueries({ queryKey: qk.recent(eventId) });
+        qc.invalidateQueries({ queryKey: qk.guests(eventId) });
+      }
+      void guestId;
+    },
+  });
+}
+
+export function useReentryCheckin(eventId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (guestId: string) => reentryCheckin(guestId),
+    onSuccess: () => {
+      if (eventId) {
+        qc.invalidateQueries({ queryKey: qk.recent(eventId) });
+        qc.invalidateQueries({ queryKey: qk.dashboard(eventId) });
+      }
     },
   });
 }
