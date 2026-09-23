@@ -54,15 +54,26 @@ export interface EventListItem {
 export interface EventDetail extends EventListItem {
   description?: string;
   venue?: string;
+  venueAddress?: string;
   mapLink?: string;
   endDate?: string;
   startTime?: string;
   endTime?: string;
+  guestArrivalTime?: string;
   timezone: string;
   bannerImage?: string;
   coverImage?: string;
   logo?: string;
   branding: { primaryColor?: string; secondaryColor?: string };
+  brideName?: string;
+  groomName?: string;
+  dressCode?: string;
+  weddingWebsiteUrl?: string;
+  invitationBackgroundImage?: string;
+  invitationMessage?: string;
+  bismillahImageUrl?: string;
+  quranVerse?: string;
+  quranReference?: string;
   createdAt: string;
   updatedAt: string;
   config?: EventConfig;
@@ -78,21 +89,41 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface Party {
+  _id: string;
+  eventId: string;
+  name: string;
+  side?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  token: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type RsvpStatus = "pending" | "accepted" | "declined" | "maybe";
 export type AttendanceStatus = "absent" | "present";
 export type ApprovalStatus = "not_required" | "pending" | "approved" | "rejected";
-export type InvitationStatus = "pending" | "sent" | "opened";
+export type InvitationStatus = "not_sent" | "sent" | "opened";
 
 export interface Guest {
   _id: string;
   eventId: string;
   categoryId?: string | null;
+  partyId?: string | null;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   notes?: string;
+  side?: string;
+  isVip?: boolean;
+  isImmediateFamily?: boolean;
   invitationToken?: string;
   invitationStatus: InvitationStatus;
+  invitationSentAt?: string | null;
+  invitationOpenedAt?: string | null;
   rsvpStatus: RsvpStatus;
   rsvpRespondedAt?: string | null;
   approvalStatus: ApprovalStatus;
@@ -138,7 +169,15 @@ export interface FormResponseRow {
 }
 
 export interface CheckinResult {
-  guest: { fullName: string; category: string | null };
+  guest: {
+    fullName: string;
+    firstName?: string;
+    category: string | null;
+    partyName?: string | null;
+    side?: string;
+    isVip?: boolean;
+    rsvpStatus?: RsvpStatus;
+  };
   attendanceStatus: AttendanceStatus;
   checkInTime: string;
 }
@@ -146,7 +185,12 @@ export interface CheckinResult {
 export interface CheckinSearchResult {
   id: string;
   fullName: string;
+  firstName?: string;
   category: string | null;
+  partyName?: string | null;
+  side?: string;
+  isVip?: boolean;
+  rsvpStatus?: RsvpStatus;
   attendanceStatus: AttendanceStatus;
 }
 
@@ -206,15 +250,35 @@ export interface SecurityStaff {
 export interface Invitation {
   event: {
     name: string;
+    brideName?: string;
+    groomName?: string;
+    dressCode?: string;
+    weddingWebsiteUrl?: string;
     banner?: string;
+    invitationBackgroundImage?: string;
     venue?: string;
+    venueAddress?: string;
     mapLink?: string;
     startDate: string;
     startTime?: string;
     endTime?: string;
+    guestArrivalTime?: string;
     branding?: { primaryColor?: string; secondaryColor?: string };
+    invitationMessage?: string;
+    bismillahImageUrl?: string;
+    quranVerse?: string;
+    quranReference?: string;
   };
-  guest: { fullName: string; rsvpStatus: RsvpStatus };
+  guest: {
+    firstName?: string;
+    lastName?: string;
+    fullName: string;
+    rsvpStatus: RsvpStatus;
+    qrToken?: string;
+    partyName?: string;
+    side?: string;
+    invitationToken?: string;
+  };
   config: { modules: EventModules; rsvpMode: RsvpMode };
   formSchema: FormField[];
 }

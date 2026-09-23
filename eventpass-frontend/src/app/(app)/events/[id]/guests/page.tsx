@@ -12,6 +12,8 @@ import {
   UserCheck,
   X,
   Share2,
+  Crown,
+  Send,
 } from "lucide-react";
 import {
   useGuests,
@@ -21,6 +23,7 @@ import {
   useGenerateGuestQr,
   useApproveGuest,
   useEvent,
+  useMarkGuestSent,
 } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
 import { downloadFile, ApiClientError, API_URL, tokenStore } from "@/lib/api";
@@ -67,6 +70,8 @@ export default function GuestsPage() {
   const [rsvp, setRsvp] = useState("all");
   const [attendance, setAttendance] = useState("all");
   const [category, setCategory] = useState("all");
+  const [sideFilter, setSideFilter] = useState("all");
+  const [vipFilter, setVipFilter] = useState("all");
   const [sort, setSort] = useState("-createdAt");
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -84,6 +89,8 @@ export default function GuestsPage() {
   if (rsvp !== "all") paramsObj.rsvpStatus = rsvp;
   if (attendance !== "all") paramsObj.attendanceStatus = attendance;
   if (category !== "all") paramsObj.category = category;
+  if (sideFilter !== "all") paramsObj.side = sideFilter;
+  if (vipFilter !== "all") paramsObj.isVip = vipFilter;
   if (debouncedSearch) paramsObj.q = debouncedSearch;
   if (sort) paramsObj.sort = sort;
 
@@ -95,6 +102,7 @@ export default function GuestsPage() {
   const bulkMutation = useBulkGuestAction(eventId);
   const qrMutation = useGenerateGuestQr(eventId);
   const approveMutation = useApproveGuest(eventId);
+  const markSentMutation = useMarkGuestSent(eventId);
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -124,6 +132,20 @@ export default function GuestsPage() {
         hideOnMobile: true,
         cell: (g) =>
           g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "—"} /> : <span className="text-fg-muted">—</span>,
+      },
+      {
+        key: "side",
+        header: "Side",
+        hideOnMobile: true,
+        cell: (g) => g.side ? <Badge variant={g.side === "Bride" ? "primary" : "secondary"}>{g.side}</Badge> : <span className="text-fg-muted">—</span>,
+      },
+      {
+        key: "isVip",
+        header: "VIP",
+        hideOnMobile: true,
+        className: "w-16 text-center",
+        headerClassName: "text-center",
+        cell: (g) => g.isVip ? <Crown className="size-4 mx-auto text-yellow-500" /> : <span className="text-fg-muted">—</span>,
       },
       ...(event?.config?.modules.rsvp
         ? [{ key: "rsvpStatus", header: "RSVP", hideOnMobile: true, cell: (g: Guest) => <Badge variant={rsvpBadge(g.rsvpStatus).variant}>{rsvpBadge(g.rsvpStatus).label}</Badge> }]
@@ -201,6 +223,15 @@ export default function GuestsPage() {
     }
   };
 
+  const handleMarkSent = async (guest: Guest) => {
+    try {
+      await markSentMutation.mutateAsync(guest._id);
+      toast({ title: "Invitation marked as sent", variant: "success" });
+    } catch (err) {
+      toast({ title: "Could not mark as sent", description: (err as Error).message, variant: "error" });
+    }
+  };
+
   const handleShareQr = async (guest: Guest) => {
     if (!guest.qrToken) return;
     const eventName = event?.name ?? "this event";
@@ -209,7 +240,7 @@ export default function GuestsPage() {
       const phone = guest.phone ? guest.phone.replace(/[^\d]/g, "") : "";
       const message = [
         `You're invited to ${eventName}!`,
-        guest.invitationToken ? `${window.location.origin}/invite/${guest.invitationToken}` : "",
+        guest.invitationToken ? `${window.location.origin}/i/${guest.invitationToken}` : "",
         "Show your QR code at the entrance to check in.",
       ]
         .filter(Boolean)
@@ -407,12 +438,48 @@ export default function GuestsPage() {
                 </SelectContent>
               </Select>
             ) : null}
+            <Select
+              value={sideFilter}
+              onValueChange={(v) => {
+                setSideFilter(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="Side" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All sides</SelectItem>
+                <SelectItem value="Bride">Bride</SelectItem>
+                <SelectItem value="Groom">Groom</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={vipFilter}
+              onValueChange={(v) => {
+                setVipFilter(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="VIP" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All guests</SelectItem>
+                <SelectItem value="true">VIP only</SelectItem>
+                <SelectItem value="false">Non-VIP</SelectItem>
+              </SelectContent>
+            </Select>
           </>
         }
         titleAccessor={(g) => g.fullName}
         subtitleAccessor={(g) => {
+          const parts: string[] = [];
+          if (g.side) parts.push(g.side);
+          if (g.isVip) parts.push("VIP");
           const b = rsvpBadge(g.rsvpStatus);
-          return `${b.label} · ${attendanceBadge(g.attendanceStatus).label}`;
+          parts.push(b.label, attendanceBadge(g.attendanceStatus).label);
+          return parts.join(" · ");
         }}
         mobileEndContent={(g) => (
           <button
@@ -436,6 +503,7 @@ export default function GuestsPage() {
                   : []),
                 { label: (<span className="inline-flex items-center gap-2"><Pencil className="size-3.5" />Edit</span>), onClick: () => setEditing(g) },
                 { label: (<span className="inline-flex items-center gap-2"><Share2 className="size-3.5" />Share invitation</span>), onClick: () => setInviteGuest(g) },
+                { label: (<span className="inline-flex items-center gap-2"><Send className="size-3.5" />Mark as sent</span>), onClick: () => handleMarkSent(g) },
                 ...(g.qrToken
                   ? [
                       { label: (<span className="inline-flex items-center gap-2"><Share2 className="size-3.5" />Share QR</span>), onClick: () => handleShareQr(g) },
@@ -475,7 +543,7 @@ export default function GuestsPage() {
         <ModalContent>
           <ModalHeader>
             <ModalTitle>Import guests</ModalTitle>
-            <ModalDescription>Upload a CSV with columns: fullName, email, phone, category, notes.</ModalDescription>
+            <ModalDescription>Upload a CSV with columns: first name, last name, email, phone, category, party/family name, side, vip, immediate family, notes.</ModalDescription>
           </ModalHeader>
           <ModalBody>
             <GuestImportForm eventId={eventId} onDone={() => setImportOpen(false)} />
@@ -531,6 +599,7 @@ export default function GuestsPage() {
         event={event}
         open={!!inviteGuest}
         onOpenChange={(o) => !o && setInviteGuest(null)}
+        onMarkSent={markSentMutation.mutateAsync}
       />
     </div>
   );

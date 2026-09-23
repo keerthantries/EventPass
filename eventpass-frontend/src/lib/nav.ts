@@ -7,6 +7,8 @@ import {
   Settings,
   Tags,
   ClipboardList,
+  Mail,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -39,7 +41,8 @@ export const eventNav: EventNavItem[] = [
   { href: "/guests", label: "Guests", icon: Users, roles: ["super_admin", "organizer", "security"] },
   { href: "/categories", label: "Categories", icon: Tags, roles: ["super_admin", "organizer"] },
   { href: "/forms", label: "Forms", icon: ClipboardList, roles: ["super_admin", "organizer"] },
-  { href: "/attendance", label: "Attendance", icon: ScanLine, roles: ["super_admin", "organizer", "security"] },
+  { href: "/invitations", label: "Invitations", icon: Mail, roles: ["super_admin", "organizer"] },
+  { href: "/attendance", label: "Check-In", icon: ScanLine, roles: ["super_admin", "organizer", "security"] },
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "organizer"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "organizer"] },
 ];

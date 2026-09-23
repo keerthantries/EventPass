@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,10 +21,14 @@ import {
 } from "@/components/ui/select";
 
 const schema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters").max(100),
+  firstName: z.string().min(1, "First name is required").max(50),
+  lastName: z.string().min(1, "Last name is required").max(50),
   email: z.string().email("Enter a valid email").optional().or(z.literal("")),
   phone: z.string().max(20).optional().or(z.literal("")),
   category: z.string().optional(),
+  side: z.string().optional(),
+  isVip: z.boolean().optional(),
+  isImmediateFamily: z.boolean().optional(),
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 
@@ -52,22 +57,32 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      fullName: guest?.fullName ?? "",
+      firstName: guest?.firstName ?? guest?.fullName?.split(" ")[0] ?? "",
+      lastName: guest?.lastName ?? guest?.fullName?.split(" ").slice(1).join(" ") ?? "",
       email: guest?.email ?? "",
       phone: guest?.phone ?? "",
       category: guest?.categoryId ?? "",
+      side: guest?.side ?? "",
+      isVip: guest?.isVip ?? false,
+      isImmediateFamily: guest?.isImmediateFamily ?? false,
       notes: guest?.notes ?? "",
     },
   });
 
   const category = watch("category");
+  const side = watch("side");
 
   const onSubmit = async (values: FormValues) => {
     const payload: Record<string, unknown> = {
-      fullName: values.fullName,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      fullName: `${values.firstName} ${values.lastName}`,
       email: values.email || undefined,
       phone: values.phone || undefined,
       category: values.category && values.category !== "none" ? values.category : undefined,
+      side: values.side && values.side !== "none" ? values.side : undefined,
+      isVip: values.isVip || false,
+      isImmediateFamily: values.isImmediateFamily || false,
       notes: values.notes || undefined,
     };
     try {
@@ -90,17 +105,26 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div className="space-y-1.5">
-        <Label htmlFor="fullName">
-          Full name <span className="text-danger">*</span>
-        </Label>
-        <Input id="fullName" placeholder="Daniel Smith" {...register("fullName")} />
-        {errors.fullName ? <p className="text-xs text-danger">{errors.fullName.message}</p> : null}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="firstName">
+            First name <span className="text-danger">*</span>
+          </Label>
+          <Input id="firstName" placeholder="Ikram" {...register("firstName")} />
+          {errors.firstName ? <p className="text-xs text-danger">{errors.firstName.message}</p> : null}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="lastName">
+            Last name <span className="text-danger">*</span>
+          </Label>
+          <Input id="lastName" placeholder="Halane" {...register("lastName")} />
+          {errors.lastName ? <p className="text-xs text-danger">{errors.lastName.message}</p> : null}
+        </div>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="email">
-            Email <span className="font-normal text-fg-muted">(optional)</span>
+            Email <span className="font-normal text-fg-muted">(optional, shared per family)</span>
           </Label>
           <Input id="email" type="email" placeholder="guest@example.com" {...register("email")} />
           {errors.email ? <p className="text-xs text-danger">{errors.email.message}</p> : null}
@@ -112,23 +136,56 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
           <Input id="phone" placeholder="+1 555-123-4567" {...register("phone")} />
         </div>
       </div>
-      <div className="space-y-1.5">
-        <Label>
-          Category <span className="font-normal text-fg-muted">(optional)</span>
-        </Label>
-        <Select value={category} onValueChange={(v) => setValue("category", v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="No category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No category</SelectItem>
-            {categories?.map((c) => (
-              <SelectItem key={c._id} value={c._id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>
+            Category <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Select value={category} onValueChange={(v) => setValue("category", v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="No category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No category</SelectItem>
+              {categories?.map((c) => (
+                <SelectItem key={c._id} value={c._id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>
+            Side <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Select value={side} onValueChange={(v) => setValue("side", v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select side" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Not specified</SelectItem>
+              <SelectItem value="Bride">Bride</SelectItem>
+              <SelectItem value="Groom">Groom</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex items-center gap-6">
+        <label className="flex items-center gap-2 text-sm text-fg-secondary">
+          <Switch
+            checked={watch("isVip")}
+            onCheckedChange={(v) => setValue("isVip", v)}
+          />
+          VIP guest
+        </label>
+        <label className="flex items-center gap-2 text-sm text-fg-secondary">
+          <Switch
+            checked={watch("isImmediateFamily")}
+            onCheckedChange={(v) => setValue("isImmediateFamily", v)}
+          />
+          Immediate family
+        </label>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="notes">

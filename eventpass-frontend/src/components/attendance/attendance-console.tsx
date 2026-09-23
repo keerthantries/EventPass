@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, XCircle, AlertTriangle, Search, UserCheck, History, UserRound, ScanLine } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, Search, UserCheck, History, ScanLine, Crown, Users } from "lucide-react";
 import { useScanCheckin, useManualCheckin, useSearchCheckin, useRecentCheckins } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ApiClientError } from "@/lib/api";
@@ -16,7 +16,7 @@ import { cn, formatTime, initials } from "@/lib/utils";
 
 type ScanFeedback =
   | { kind: "success"; data: CheckinResult }
-  | { kind: "duplicate"; message: string }
+  | { kind: "duplicate"; message: string; data?: CheckinResult }
   | { kind: "error"; message: string };
 
 export function AttendanceConsole({ eventId }: { eventId: string }) {
@@ -33,8 +33,6 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     window.setTimeout(() => setFlash(false), 1200);
   };
 
-  // Serialises check-ins: while one is in flight, further scans/taps are ignored
-  // so a double tap or re-scan can never create a duplicate request.
   const runCheckin = async (action: () => Promise<CheckinResult>, duplicateHint: string) => {
     if (busy) return;
     setBusy(true);
@@ -102,7 +100,7 @@ function ScanResult({ feedback, busy }: { feedback: ScanFeedback | null; busy: b
       <Card>
         <CardContent className="flex items-center justify-center gap-2 py-8 text-sm text-fg-secondary">
           <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          Checking guest in…
+          Checking guest in...
         </CardContent>
       </Card>
     );
@@ -119,27 +117,56 @@ function ScanResult({ feedback, busy }: { feedback: ScanFeedback | null; busy: b
   }
 
   if (feedback.kind === "success") {
+    const g = feedback.data.guest;
     return (
       <Card className="overflow-hidden border-success/40 animate-scale-in">
         <div className="h-1 w-full bg-gradient-to-r from-success to-primary" />
-        <CardContent className="flex items-center gap-4 p-5">
-          <div className="relative shrink-0">
-            <div className="flex size-12 items-center justify-center rounded-full bg-success/15">
-              <CheckCircle2 className="size-7 text-success" />
+        <CardContent className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="flex size-12 items-center justify-center rounded-full bg-success/15">
+                <CheckCircle2 className="size-7 text-success" />
+              </div>
+              <span className="absolute -inset-1 rounded-full bg-success/20 blur-md" />
             </div>
-            <span className="absolute -inset-1 rounded-full bg-success/20 blur-md" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-success">Checked in</p>
-            <p className="truncate text-lg font-semibold text-fg">{feedback.data.guest.fullName}</p>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-sm text-fg-secondary">{feedback.data.guest.category ?? "Uncategorised"}</span>
-              <span className="text-xs text-fg-muted">· {formatTime(feedback.data.checkInTime)}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-success">Valid Wedding Pass</p>
+              <p className="truncate text-lg font-semibold text-fg">{g.fullName}</p>
             </div>
+            <Badge variant="success" className="shrink-0">
+              Present
+            </Badge>
           </div>
-          <Badge variant="success" className="shrink-0">
-            Present
-          </Badge>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-fg-secondary">
+            {g.partyName && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs">
+                <Users className="size-3" />
+                {g.partyName}
+              </span>
+            )}
+            {g.side && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs">
+                {g.side}
+              </span>
+            )}
+            {g.isVip && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2.5 py-0.5 text-xs text-yellow-600">
+                <Crown className="size-3" />
+                VIP
+              </span>
+            )}
+            {g.rsvpStatus && (
+              <span className={cn(
+                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs",
+                g.rsvpStatus === "accepted" ? "bg-green-500/10 text-green-600" :
+                g.rsvpStatus === "declined" ? "bg-red-500/10 text-red-600" :
+                "bg-yellow-500/10 text-yellow-600"
+              )}>
+                RSVP: {g.rsvpStatus}
+              </span>
+            )}
+            <span className="text-xs text-fg-muted">· {formatTime(feedback.data.checkInTime)}</span>
+          </div>
         </CardContent>
       </Card>
     );
@@ -176,7 +203,7 @@ function ScanResult({ feedback, busy }: { feedback: ScanFeedback | null; busy: b
         )}
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium uppercase tracking-wider text-fg-secondary">
-            {feedback.kind === "duplicate" ? "Already checked in" : "Scan failed"}
+            {feedback.kind === "duplicate" ? "Already Checked In" : "Scan Failed"}
           </p>
           <p className="text-sm font-medium text-fg">{feedback.message}</p>
           <p className="mt-0.5 text-xs text-fg-muted">
@@ -217,7 +244,7 @@ function ManualSearch({
         {debounced.length < 2 ? (
           <p className="text-xs text-fg-muted">Type at least 2 characters to search.</p>
         ) : isFetching ? (
-          <p className="text-xs text-fg-muted">Searching…</p>
+          <p className="text-xs text-fg-muted">Searching...</p>
         ) : data && data.length === 0 ? (
           <p className="text-xs text-fg-muted">No guests found.</p>
         ) : (
@@ -229,8 +256,15 @@ function ManualSearch({
                     {initials(g.fullName)}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-fg">{g.fullName}</p>
-                    <p className="text-xs text-fg-muted">{g.category ?? "Uncategorised"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-fg">{g.fullName}</p>
+                      {g.isVip && <Crown className="size-3 shrink-0 text-yellow-500" />}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-fg-muted">
+                      {g.category && <span>{g.category}</span>}
+                      {g.partyName && <span>· {g.partyName}</span>}
+                      {g.side && <span>· {g.side}</span>}
+                    </div>
                   </div>
                 </div>
                 {g.attendanceStatus === "present" ? (

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { Save } from "lucide-react";
+import { Save, Heart } from "lucide-react";
 import { useEvent, useUpdateEventConfig, useUpdateBranding } from "@/hooks/queries";
-import { ApiClientError } from "@/lib/api";
+import { ApiClientError, apiRequest } from "@/lib/api";
 import type { EventConfig, RsvpMode, WorkflowKey, QrTiming, EventModules } from "@/lib/types";
 import { RequireRole } from "@/components/ui/require-role";
 import { PageHeader } from "@/components/ui/page-header";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -70,7 +71,7 @@ export default function EventSettingsPage() {
   return (
     <RequireRole roles={["organizer", "super_admin"]}>
       <div>
-        <PageHeader title="Settings" description="Event configuration and guest-facing branding." />
+        <PageHeader title="Settings" description="Event configuration, wedding details, and guest-facing branding." />
         <SettingsEditor eventId={eventId} event={event} />
       </div>
     </RequireRole>
@@ -82,6 +83,18 @@ function SettingsEditor({ eventId, event }: { eventId: string; event: import("@/
   const [config, setConfig] = useState<EventConfig>(() => event.config as EventConfig);
   const [primaryColor, setPrimaryColor] = useState(() => event.branding?.primaryColor ?? "#6b78e6");
   const [secondaryColor, setSecondaryColor] = useState(() => event.branding?.secondaryColor ?? "#2fb85e");
+
+  // Wedding fields
+  const [brideName, setBrideName] = useState(() => event.brideName ?? "");
+  const [groomName, setGroomName] = useState(() => event.groomName ?? "");
+  const [dressCode, setDressCode] = useState(() => event.dressCode ?? "");
+  const [weddingWebsiteUrl, setWeddingWebsiteUrl] = useState(() => event.weddingWebsiteUrl ?? "");
+  const [invitationMessage, setInvitationMessage] = useState(() => event.invitationMessage ?? "");
+  const [venueAddress, setVenueAddress] = useState(() => event.venueAddress ?? "");
+  const [guestArrivalTime, setGuestArrivalTime] = useState(() => event.guestArrivalTime ?? "");
+  const [bismillahImageUrl, setBismillahImageUrl] = useState(() => event.bismillahImageUrl ?? "");
+  const [quranVerse, setQuranVerse] = useState(() => event.quranVerse ?? "");
+  const [quranReference, setQuranReference] = useState(() => event.quranReference ?? "");
 
   const configMutation = useUpdateEventConfig(eventId);
   const brandingMutation = useUpdateBranding(eventId);
@@ -119,10 +132,160 @@ function SettingsEditor({ eventId, event }: { eventId: string; event: import("@/
     }
   };
 
+  const saveWeddingDetails = async () => {
+    try {
+      await apiRequest(`/events/${eventId}`, {
+        method: "PATCH",
+        body: {
+          brideName,
+          groomName,
+          dressCode,
+          weddingWebsiteUrl,
+          invitationMessage,
+          venueAddress,
+          guestArrivalTime,
+          bismillahImageUrl,
+          quranVerse,
+          quranReference,
+        },
+      });
+      toast({ title: "Wedding details saved", variant: "success" });
+    } catch (err) {
+      toast({ title: "Could not save wedding details", description: err instanceof ApiClientError ? err.message : "Try again", variant: "error" });
+    }
+  };
+
   const requiredModules = workflowRequires[config.workflow] ?? [];
 
   return (
     <div className="space-y-6">
+        {/* Wedding Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="size-4 text-pink-500" />
+              Wedding Details
+            </CardTitle>
+            <CardDescription>Configure the wedding invitation appearance and details.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="brideName">Bride&apos;s Name</Label>
+                <Input
+                  id="brideName"
+                  value={brideName}
+                  onChange={(e) => setBrideName(e.target.value)}
+                  placeholder="Ikram Halane"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="groomName">Groom&apos;s Name</Label>
+                <Input
+                  id="groomName"
+                  value={groomName}
+                  onChange={(e) => setGroomName(e.target.value)}
+                  placeholder="Nebil Yusuf"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="venueAddress">Venue Address</Label>
+              <Input
+                id="venueAddress"
+                value={venueAddress}
+                onChange={(e) => setVenueAddress(e.target.value)}
+                placeholder="30 Vice Regent Blvd, Etobicoke, ON M9W 7A4"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="guestArrivalTime">Guest Arrival Time</Label>
+                <Input
+                  id="guestArrivalTime"
+                  value={guestArrivalTime}
+                  onChange={(e) => setGuestArrivalTime(e.target.value)}
+                  placeholder="6:00PM"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dressCode">Dress Code</Label>
+                <Input
+                  id="dressCode"
+                  value={dressCode}
+                  onChange={(e) => setDressCode(e.target.value)}
+                  placeholder="Traditional Clothing / Black Tie"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="weddingWebsiteUrl">Wedding Website URL</Label>
+              <Input
+                id="weddingWebsiteUrl"
+                type="url"
+                value={weddingWebsiteUrl}
+                onChange={(e) => setWeddingWebsiteUrl(e.target.value)}
+                placeholder="https://withjoy.com/ikramhalane-and-nebilyusuf"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invitationMessage">Invitation Message</Label>
+              <Textarea
+                id="invitationMessage"
+                rows={3}
+                value={invitationMessage}
+                onChange={(e) => setInvitationMessage(e.target.value)}
+                placeholder="Together with their families request the pleasure of your company..."
+              />
+              <p className="text-xs text-fg-muted">
+                Available variables: {"{{guest_first_name}}"}, {"{{guest_full_name}}"}, {"{{wedding_date}}"}, {"{{wedding_time}}"}, {"{{venue}}"}, {"{{dress_code}}"}, {"{{wedding_website_url}}"}
+              </p>
+            </div>
+            <div className="border-t border-border pt-4">
+              <p className="text-sm font-medium text-fg mb-3">Optional: Religious/Cultural Elements</p>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bismillahImageUrl">Bismillah Image URL</Label>
+                  <Input
+                    id="bismillahImageUrl"
+                    type="url"
+                    value={bismillahImageUrl}
+                    onChange={(e) => setBismillahImageUrl(e.target.value)}
+                    placeholder="https://..."
+                  />
+                  <p className="text-xs text-fg-muted">Leave empty to hide. Leave blank for default.</p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quranVerse">Quran Verse</Label>
+                    <Input
+                      id="quranVerse"
+                      value={quranVerse}
+                      onChange={(e) => setQuranVerse(e.target.value)}
+                      placeholder="&quot;AND WE CREATED YOU IN PAIRS.&quot;"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="quranReference">Verse Reference</Label>
+                    <Input
+                      id="quranReference"
+                      value={quranReference}
+                      onChange={(e) => setQuranReference(e.target.value)}
+                      placeholder="QURAN 78:8"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={saveWeddingDetails} loading={false}>
+                <Save className="size-4" />
+                Save wedding details
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Modules</CardTitle>

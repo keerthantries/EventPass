@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import type { Category, Guest, ImportResult } from "@/lib/types";
+import type { Category, Guest, ImportResult, Party } from "@/lib/types";
 import type { ListResult } from "./events";
 
 export async function listCategories(eventId: string): Promise<Category[]> {
@@ -43,7 +43,23 @@ export async function deleteGuest(id: string): Promise<void> {
 
 export async function bulkGuestAction(
   eventId: string,
-  payload: { guestIds: string[]; action: "reassignCategory" | "delete"; categoryId?: string }
+  payload: {
+    guestIds: string[];
+    action:
+      | "reassignCategory"
+      | "delete"
+      | "setSide"
+      | "setVip"
+      | "setImmediateFamily"
+      | "assignParty"
+      | "generateBulkQr"
+      | "markSent";
+    categoryId?: string;
+    side?: string;
+    isVip?: boolean;
+    isImmediateFamily?: boolean;
+    partyId?: string;
+  }
 ): Promise<{ updated: number }> {
   const { data } = await apiRequest<{ updated: number }>(`/events/${eventId}/guests/bulk`, { method: "PATCH", body: payload });
   return data;
@@ -66,4 +82,13 @@ export async function generateGuestQr(id: string): Promise<{ qrToken: string; qr
 
 export async function approveGuest(id: string, decision: "approved" | "rejected"): Promise<void> {
   await apiRequest(`/guests/${id}/approve`, { method: "POST", body: { decision } });
+}
+
+export async function markGuestSent(id: string): Promise<void> {
+  await apiRequest(`/guests/${id}/mark-sent`, { method: "POST" });
+}
+
+export async function listParties(eventId: string): Promise<Party[]> {
+  const { data } = await apiRequest<Party[]>(`/events/${eventId}/categories`);
+  return data;
 }

@@ -24,6 +24,7 @@ import {
   importGuests,
   generateGuestQr,
   approveGuest,
+  markGuestSent,
 } from "@/lib/queries/guests";
 import { getFormSchema, putFormSchema, listFormResponses } from "@/lib/queries/forms";
 import {
@@ -206,8 +207,23 @@ export function useDeleteGuest(eventId: string) {
 export function useBulkGuestAction(eventId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { guestIds: string[]; action: "reassignCategory" | "delete"; categoryId?: string }) =>
-      bulkGuestAction(eventId, payload),
+    mutationFn: (payload: {
+      guestIds: string[];
+      action:
+        | "reassignCategory"
+        | "delete"
+        | "setSide"
+        | "setVip"
+        | "setImmediateFamily"
+        | "assignParty"
+        | "generateBulkQr"
+        | "markSent";
+      categoryId?: string;
+      side?: string;
+      isVip?: boolean;
+      isImmediateFamily?: boolean;
+      partyId?: string;
+    }) => bulkGuestAction(eventId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.guests(eventId) });
       qc.invalidateQueries({ queryKey: qk.dashboard(eventId) });
@@ -238,6 +254,14 @@ export function useApproveGuest(eventId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, decision }: { id: string; decision: "approved" | "rejected" }) => approveGuest(id, decision),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.guests(eventId) }),
+  });
+}
+
+export function useMarkGuestSent(eventId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => markGuestSent(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.guests(eventId) }),
   });
 }
