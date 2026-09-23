@@ -1,6 +1,6 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
-export type CheckinResult = 'success' | 'duplicate';
+export type CheckinResult = 'success' | 'duplicate' | 'undo' | 'reentry';
 export type CheckinMethod = 'camera' | 'manual';
 
 export interface ICheckinLog extends Document {
@@ -17,7 +17,7 @@ const checkinLogSchema = new Schema<ICheckinLog>(
   {
     eventId: { type: Schema.Types.ObjectId, ref: 'Event', required: true },
     guestId: { type: Schema.Types.ObjectId, ref: 'Guest', required: true },
-    result: { type: String, enum: ['success', 'duplicate'], required: true },
+    result: { type: String, enum: ['success', 'duplicate', 'undo', 'reentry'], required: true },
     scannedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     method: { type: String, enum: ['camera', 'manual'], required: true },
   },

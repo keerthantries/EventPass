@@ -3,6 +3,7 @@ import authRoutes from './auth.routes';
 import eventRoutes from './event.routes';
 import { nestedCategoryRoutes, flatCategoryRoutes } from './category.routes';
 import { nestedGuestRoutes, flatGuestRoutes } from './guest.routes';
+import { nestedPartyRoutes } from './party.routes';
 import formRoutes from './form.routes';
 import publicInviteRoutes from './publicInvite.routes';
 import publicFamilyRoutes from './publicFamily.routes';
@@ -18,6 +19,7 @@ router.use('/events', eventRoutes);
 // Event-scoped resources
 router.use('/events/:eventId/categories', nestedCategoryRoutes);
 router.use('/events/:eventId/guests', nestedGuestRoutes);
+router.use('/events/:eventId/parties', nestedPartyRoutes);
 router.use('/events/:eventId/form', formRoutes);
 router.use('/events/:eventId/checkin', nestedCheckinRoutes);
 router.use('/events/:eventId/dashboard', dashboardRoutes);

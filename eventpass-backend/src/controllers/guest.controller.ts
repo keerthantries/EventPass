@@ -174,9 +174,12 @@ export const bulkGuestAction = asyncHandler(async (req: Request, res: Response) 
   }
 
   if (action === 'markSent') {
+    const channel = ['email', 'sms', 'whatsapp', 'other'].includes(req.body.channel) ? req.body.channel : undefined;
+    const update: Record<string, unknown> = { invitationStatus: 'sent', invitationSentAt: new Date() };
+    if (channel) update.invitationChannel = channel;
     const result = await Guest.updateMany(
       { _id: { $in: guestIds }, eventId: event._id },
-      { invitationStatus: 'sent', invitationSentAt: new Date() }
+      update
     );
     return sendSuccess(res, { updated: result.modifiedCount });
   }
@@ -215,13 +218,35 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
   }
 
   const partyCache = new Map<string, string>();
-  async function resolveParty(name?: string, side?: string): Promise<string | null> {
-    if (!name) return null;
-    const key = name.trim().toLowerCase();
+  async function resolveParty(name?: string, side?: string, externalId?: string): Promise<string | null> {
+    if (!name && !externalId) return null;
+    const ext = externalId?.trim() || undefined;
+    const nameKey = name?.trim().toLowerCase();
+    const key = ext ? `ext:${ext.toLowerCase()}` : `name:${nameKey!}`;
     if (partyCache.has(key)) return partyCache.get(key)!;
-    let party = await Party.findOne({ eventId: event._id, name: new RegExp(`^${name.trim()}$`, 'i') });
-    if (!party) party = await Party.create({ eventId: event._id, name: name.trim(), side, token: generatePartyToken() });
+
+    let party = ext
+      ? await Party.findOne({ eventId: event._id, externalId: ext })
+      : name
+        ? await Party.findOne({ eventId: event._id, name: new RegExp(`^${name.trim()}$`, 'i') })
+        : null;
+
+    if (!party) {
+      party = await Party.create({
+        eventId: event._id,
+        name: name?.trim() || ext!,
+        side,
+        token: generatePartyToken(),
+        externalId: ext,
+      });
+    } else if (ext && !party.externalId) {
+      party.externalId = ext;
+      await party.save();
+    }
+
     partyCache.set(key, party.id);
+    if (nameKey) partyCache.set(`name:${nameKey}`, party.id);
+    if (ext) partyCache.set(`ext:${ext.toLowerCase()}`, party.id);
     return party.id;
   }
 
@@ -249,7 +274,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     }
 
     const categoryId = await resolveCategory(row.category);
-    const partyId = await resolveParty(row.partyName, row.side);
+    const partyId = await resolveParty(row.partyName, row.side, row.partyId);
 
     const guestData: Record<string, any> = {
       eventId: event._id,
@@ -307,6 +332,9 @@ export const exportGuests = asyncHandler(async (req: Request, res: Response) => 
     vip: g.isVip ? 'Yes' : '',
     immediateFamily: g.isImmediateFamily ? 'Yes' : '',
     invitationStatus: g.invitationStatus,
+    invitationChannel: g.invitationChannel ?? '',
+    invitationSentAt: g.invitationSentAt ?? '',
+    invitationOpenedAt: g.invitationOpenedAt ?? '',
     rsvpStatus: g.rsvpStatus,
     attendanceStatus: g.attendanceStatus,
     checkInTime: g.checkInTime ?? '',
@@ -446,6 +474,10 @@ export const markGuestSent = asyncHandler(async (req: Request, res: Response) =>
 
   guest.invitationStatus = 'sent';
   guest.invitationSentAt = new Date();
+  const channel = req.body?.channel;
+  if (['email', 'sms', 'whatsapp', 'other'].includes(channel)) {
+    guest.invitationChannel = channel;
+  }
   await guest.save();
 
   return sendSuccess(res, res.locals.projectGuest(guest.toObject()));

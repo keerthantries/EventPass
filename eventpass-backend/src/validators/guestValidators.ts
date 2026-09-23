@@ -38,6 +38,14 @@ export const listGuestsQuerySchema = z.object({
       '-checkInTime',
       'side',
       '-side',
+      'invitationStatus',
+      '-invitationStatus',
+      'invitationOpenedAt',
+      '-invitationOpenedAt',
+      'rsvpStatus',
+      '-rsvpStatus',
+      'attendanceStatus',
+      '-attendanceStatus',
     ])
     .optional(),
 });
@@ -59,8 +67,13 @@ export const bulkGuestActionSchema = z.object({
   isVip: z.boolean().optional(),
   isImmediateFamily: z.boolean().optional(),
   partyId: z.string().optional(),
+  channel: z.enum(['email', 'sms', 'whatsapp', 'other']).optional(),
 });
 
 export const approveGuestSchema = z.object({
   decision: z.enum(['approved', 'rejected']),
+});
+
+export const markSentSchema = z.object({
+  channel: z.enum(['email', 'sms', 'whatsapp', 'other']).optional(),
 });

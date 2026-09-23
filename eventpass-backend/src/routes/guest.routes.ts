@@ -11,6 +11,7 @@ import {
   bulkGuestActionSchema,
   approveGuestSchema,
   listGuestsQuerySchema,
+  markSentSchema,
 } from '../validators/guestValidators';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -34,6 +35,6 @@ flat.delete('/:id', requireRole('organizer', 'super_admin'), ctrl.deleteGuest);
 flat.post('/:id/qr', requireRole('organizer', 'super_admin'), ctrl.generateGuestQr);
 flat.get('/:id/qr/download', requireRole('organizer', 'super_admin'), ctrl.downloadGuestQr);
 flat.post('/:id/approve', requireRole('organizer', 'super_admin'), validate(approveGuestSchema), ctrl.approveGuest);
-flat.post('/:id/mark-sent', requireRole('organizer', 'super_admin'), ctrl.markGuestSent);
+flat.post('/:id/mark-sent', requireRole('organizer', 'super_admin'), validate(markSentSchema), ctrl.markGuestSent);
 
 export { nested as nestedGuestRoutes, flat as flatGuestRoutes };

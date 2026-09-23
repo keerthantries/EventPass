@@ -1,6 +1,7 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
 export type InvitationStatus = 'not_sent' | 'sent' | 'opened';
+export type InvitationChannel = 'email' | 'sms' | 'whatsapp' | 'other';
 export type RsvpStatus = 'pending' | 'accepted' | 'declined' | 'maybe';
 export type ApprovalStatus = 'not_required' | 'pending' | 'approved' | 'rejected';
 export type AttendanceStatus = 'absent' | 'present';
@@ -23,6 +24,7 @@ export interface IGuest extends Document {
   invitationStatus: InvitationStatus;
   invitationSentAt?: Date;
   invitationOpenedAt?: Date;
+  invitationChannel?: InvitationChannel | null;
 
   rsvpStatus: RsvpStatus;
   rsvpRespondedAt?: Date;
@@ -64,6 +66,7 @@ const guestSchema = new Schema<IGuest>(
     invitationStatus: { type: String, enum: ['not_sent', 'sent', 'opened'], default: 'not_sent' },
     invitationSentAt: Date,
     invitationOpenedAt: Date,
+    invitationChannel: { type: String, enum: ['email', 'sms', 'whatsapp', 'other'], default: null },
 
     rsvpStatus: { type: String, enum: ['pending', 'accepted', 'declined', 'maybe'], default: 'pending' },
     rsvpRespondedAt: Date,

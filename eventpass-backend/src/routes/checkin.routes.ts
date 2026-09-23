@@ -9,8 +9,11 @@ import { scanSchema, searchQuerySchema } from '../validators/checkinValidators';
 const router = Router();
 router.use(authenticate, requireRole('organizer', 'super_admin', 'security'));
 
+router.post('/lookup', scanLimiter, validate(scanSchema), ctrl.lookupScan);
 router.post('/scan', scanLimiter, validate(scanSchema), ctrl.scanCheckin);
 router.post('/manual/:guestId', scanLimiter, ctrl.manualCheckin);
+router.post('/undo/:guestId', ctrl.undoCheckin);
+router.post('/reentry/:guestId', ctrl.reentryCheckin);
 
 export default router;
 

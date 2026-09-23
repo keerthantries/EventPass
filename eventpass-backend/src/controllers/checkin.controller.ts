@@ -19,7 +19,16 @@ async function performCheckin(guestId: string, req: Request, res: Response, meth
 
   if (guest.attendanceStatus === 'present') {
     await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'duplicate', scannedBy: req.user!.sub, method });
-    throw ApiError.conflict('Guest already checked in.', [{ checkInTime: guest.checkInTime }]);
+    const partyData0 = guest.partyId && typeof guest.partyId === 'object' ? (guest as any).partyId : null;
+    throw ApiError.conflict('Guest already checked in.', [{
+      guestId: guest.id,
+      fullName: guest.fullName,
+      partyName: partyData0?.name ?? null,
+      side: guest.side ?? partyData0?.side ?? null,
+      isVip: guest.isVip,
+      rsvpStatus: guest.rsvpStatus,
+      checkInTime: guest.checkInTime,
+    }]);
   }
 
   const claimed = await Guest.updateOne(
@@ -34,9 +43,18 @@ async function performCheckin(guestId: string, req: Request, res: Response, meth
   );
 
   if (claimed.modifiedCount === 0) {
-    const already = await Guest.findById(guest._id);
+    const already = await Guest.findById(guest._id).populate('partyId', 'name side');
     await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'duplicate', scannedBy: req.user!.sub, method });
-    throw ApiError.conflict('Guest already checked in.', [{ checkInTime: already?.checkInTime }]);
+    const partyData1 = already?.partyId && typeof already.partyId === 'object' ? (already as any).partyId : null;
+    throw ApiError.conflict('Guest already checked in.', [{
+      guestId: already?.id ?? guest.id,
+      fullName: already?.fullName ?? guest.fullName,
+      partyName: partyData1?.name ?? null,
+      side: already?.side ?? partyData1?.side ?? null,
+      isVip: already?.isVip ?? guest.isVip,
+      rsvpStatus: already?.rsvpStatus ?? guest.rsvpStatus,
+      checkInTime: already?.checkInTime,
+    }]);
   }
 
   await CheckinLog.create({ eventId: guest.eventId, guestId: guest._id, result: 'success', scannedBy: req.user!.sub, method });
@@ -60,7 +78,32 @@ async function performCheckin(guestId: string, req: Request, res: Response, meth
   });
 }
 
-/** POST /checkin/scan */
+/** POST /checkin/lookup — find guest by QR token WITHOUT changing attendance (scan → staff confirms) */
+export const lookupScan = asyncHandler(async (req: Request, res: Response) => {
+  const guest = await Guest.findOne({ qrToken: req.body.token }).populate('partyId', 'name side');
+  if (!guest) throw ApiError.notFound('Unknown or invalid QR token.');
+  await getOwnedEvent(guest.eventId.toString(), req);
+
+  const category = guest.categoryId ? await Category.findById(guest.categoryId) : null;
+  const partyData = guest.partyId && typeof guest.partyId === 'object' ? (guest as any).partyId : null;
+
+  return sendSuccess(res, {
+    guestId: guest.id,
+    guest: {
+      fullName: guest.fullName,
+      firstName: guest.firstName,
+      category: category?.name ?? null,
+      partyName: partyData?.name ?? null,
+      side: guest.side ?? partyData?.side ?? null,
+      isVip: guest.isVip,
+      rsvpStatus: guest.rsvpStatus,
+    },
+    attendanceStatus: guest.attendanceStatus,
+    checkInTime: guest.checkInTime ?? null,
+  });
+});
+
+/** POST /checkin/scan — staff confirms check-in after reviewing the looked-up guest */
 export const scanCheckin = asyncHandler(async (req: Request, res: Response) => {
   const guest = await Guest.findOne({ qrToken: req.body.token });
   if (!guest) throw ApiError.notFound('Unknown or invalid QR token.');
@@ -70,6 +113,73 @@ export const scanCheckin = asyncHandler(async (req: Request, res: Response) => {
 /** POST /checkin/manual/:guestId */
 export const manualCheckin = asyncHandler(async (req: Request, res: Response) => {
   return performCheckin(req.params.guestId, req, res, 'manual');
+});
+
+/** POST /checkin/undo/:guestId — staff-only reversal of a check-in */
+export const undoCheckin = asyncHandler(async (req: Request, res: Response) => {
+  const guest = await Guest.findById(req.params.guestId).populate('partyId', 'name side');
+  if (!guest) throw ApiError.notFound('Guest not found.');
+  const event = await getOwnedEvent(guest.eventId.toString(), req);
+  if (event.status === 'archived' || event.status === 'completed') {
+    throw ApiError.gone('EVENT_CLOSED', 'This event is closed.');
+  }
+  if (guest.attendanceStatus !== 'present') {
+    throw ApiError.conflict('Guest is not checked in.');
+  }
+
+  guest.attendanceStatus = 'absent';
+  guest.checkInTime = undefined;
+  guest.checkedInBy = null;
+  await guest.save();
+
+  await CheckinLog.create({
+    eventId: guest.eventId,
+    guestId: guest._id,
+    result: 'undo',
+    scannedBy: req.user!.sub,
+    method: 'manual',
+  });
+
+  return sendSuccess(res, {
+    guestId: guest.id,
+    fullName: guest.fullName,
+    attendanceStatus: guest.attendanceStatus,
+  });
+});
+
+/** POST /checkin/reentry/:guestId — allow an already checked-in guest to re-enter (no new attendance record) */
+export const reentryCheckin = asyncHandler(async (req: Request, res: Response) => {
+  const guest = await Guest.findById(req.params.guestId).populate('partyId', 'name side');
+  if (!guest) throw ApiError.notFound('Guest not found.');
+  const event = await getOwnedEvent(guest.eventId.toString(), req);
+  if (event.status === 'archived' || event.status === 'completed') {
+    throw ApiError.gone('EVENT_CLOSED', 'This event is closed.');
+  }
+  if (guest.attendanceStatus !== 'present') {
+    throw ApiError.conflict('Guest is not checked in.');
+  }
+
+  await CheckinLog.create({
+    eventId: guest.eventId,
+    guestId: guest._id,
+    result: 'reentry',
+    scannedBy: req.user!.sub,
+    method: 'manual',
+  });
+
+  const partyData = guest.partyId && typeof guest.partyId === 'object' ? (guest as any).partyId : null;
+  return sendSuccess(res, {
+    guest: {
+      fullName: guest.fullName,
+      partyName: partyData?.name ?? null,
+      side: guest.side ?? partyData?.side ?? null,
+      isVip: guest.isVip,
+      rsvpStatus: guest.rsvpStatus,
+    },
+    attendanceStatus: guest.attendanceStatus,
+    checkInTime: guest.checkInTime,
+    reentryAllowed: true,
+  });
 });
 
 /** GET /events/:eventId/checkin/search */
