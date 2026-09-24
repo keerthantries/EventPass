@@ -15,7 +15,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         value={value}
         onChange={onChange}
         className={cn(
-          "h-9 w-full rounded-md border border-border bg-surface pl-9 pr-8 text-sm text-fg placeholder:text-fg-muted",
+          "h-11 w-full rounded-md border border-border bg-surface pl-9 pr-9 text-base text-fg placeholder:text-fg-muted sm:h-9 sm:text-sm",
           "transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-ring/40"
         )}
         {...props}
@@ -24,10 +24,10 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
         <button
           type="button"
           onClick={onClear}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-fg-muted transition-colors hover:text-fg"
+          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm p-1.5 text-fg-muted transition-colors hover:text-fg"
           aria-label="Clear search"
         >
-          <X className="size-3.5" />
+          <X className="size-4" />
         </button>
       ) : null}
     </div>

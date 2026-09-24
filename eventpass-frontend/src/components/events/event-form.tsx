@@ -106,7 +106,7 @@ export function EventForm({ mode, event, onSuccess, onCancel }: EventFormProps) 
         const created = await createMutation.mutateAsync(payload);
         toast({ title: "Event created", variant: "success" });
         onSuccess?.(created.id);
-        router.push(`/events/${created.id}`);
+        router.push(`/events/${created.id}/guests`);
       } else {
         await updateMutation.mutateAsync(payload);
         toast({ title: "Event updated", variant: "success" });

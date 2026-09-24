@@ -238,7 +238,7 @@ export function DataTable<T>({
                           <button
                             type="button"
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex size-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                            className="inline-flex size-10 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:size-9"
                             aria-label="Row actions"
                           >
                             <MoreHorizontal className="size-4" />
@@ -304,7 +304,7 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                      className="inline-flex size-10 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:size-9"
                       aria-label="Row actions"
                     >
                       <MoreHorizontal className="size-4" />

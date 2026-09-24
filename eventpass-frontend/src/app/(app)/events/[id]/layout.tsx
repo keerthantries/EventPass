@@ -30,10 +30,8 @@ export default function EventLayout({ children }: { children: React.ReactNode })
   if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
   if (!event) return <PageSkeleton />;
 
-  const active = (href: string) => {
-    if (href === "/overview") return pathname === `/events/${params.id}`;
-    return pathname.startsWith(`/events/${params.id}${href === "/overview" ? "" : href}`);
-  };
+  const active = (href: string) =>
+    pathname === `/events/${params.id}${href}` || pathname.startsWith(`/events/${params.id}${href}/`);
 
   return (
     <div>
@@ -58,15 +56,15 @@ export default function EventLayout({ children }: { children: React.ReactNode })
         </p>
       </div>
 
-      <div className="mb-6 flex gap-1 overflow-x-auto rounded-lg border border-border bg-surface p-1">
+      <div className="sticky top-14 z-20 -mx-4 mb-6 flex gap-1 overflow-x-auto border-y border-border bg-surface/95 px-4 py-1 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:px-1">
         {items.map((item) => {
           const isActive = active(item.href);
           return (
             <Link
               key={item.href}
-              href={`/events/${params.id}${item.href === "/overview" ? "" : item.href}`}
+              href={`/events/${params.id}${item.href}`}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors sm:py-1.5",
                 isActive ? "bg-surface-2 text-fg" : "text-fg-secondary hover:text-fg"
               )}
             >

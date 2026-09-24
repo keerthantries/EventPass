@@ -255,6 +255,13 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
 
         <div className="px-4 pt-4 text-center">
           <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-fg-muted">Invitation preview</p>
+          <p className="mt-1 text-xs text-fg-muted">
+            To change field names (names, venue, dress code, message), edit them in{" "}
+            <a href={`/events/${event?.id}/settings`} className="font-medium text-primary hover:text-primary-hover hover:underline">
+              Settings
+            </a>
+            .
+          </p>
         </div>
 
         {/* Gold Card Preview */}

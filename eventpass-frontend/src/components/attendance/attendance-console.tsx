@@ -359,7 +359,7 @@ function ScanResult({
                 <p className="truncate text-lg font-semibold text-fg">{feedback.details.fullName}</p>
                 <p className="mt-0.5 text-xs text-fg-muted">
                   Originally checked in:{" "}
-                  {feedback.details.checkInTime ? formatTime(feedback.details.checkInTime) : "—"}
+                  {feedback.details.checkInTime ? formatTime(feedback.details.checkInTime) : "N/A"}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
                   {feedback.details.partyName && (

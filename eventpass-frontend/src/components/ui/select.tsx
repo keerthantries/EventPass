@@ -11,12 +11,12 @@ export const SelectTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
-    className={cn(
-      "flex h-9 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-fg",
-      "transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-ring/40",
-      "disabled:cursor-not-allowed disabled:opacity-50",
-      className
-    )}
+      className={cn(
+        "flex h-11 w-full items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-base text-fg sm:h-9 sm:text-sm",
+        "transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-ring/40",
+        "disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
     {...props}
   >
     {children}
@@ -53,11 +53,11 @@ export const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm text-fg",
-      "focus:bg-surface-2 focus:outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
+      className={cn(
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-2.5 pl-2 pr-8 text-sm text-fg sm:py-1.5",
+        "focus:bg-surface-2 focus:outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
     {...props}
   >
     <span className="absolute right-2 flex size-3.5 items-center justify-center">

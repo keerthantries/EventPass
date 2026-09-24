@@ -37,7 +37,7 @@ export function Pagination({ meta, onPageChange, className }: PaginationProps) {
           type="button"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
-          className="inline-flex size-8 items-center justify-center rounded-md border border-border text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex size-10 items-center justify-center rounded-md border border-border text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-40 sm:size-8"
         >
           <ChevronLeft className="size-4" />
           <span className="sr-only">Previous</span>
@@ -70,7 +70,7 @@ export function Pagination({ meta, onPageChange, className }: PaginationProps) {
           type="button"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="inline-flex size-8 items-center justify-center rounded-md border border-border text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex size-10 items-center justify-center rounded-md border border-border text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg disabled:pointer-events-none disabled:opacity-40 sm:size-8"
         >
           <ChevronRight className="size-4" />
           <span className="sr-only">Next</span>

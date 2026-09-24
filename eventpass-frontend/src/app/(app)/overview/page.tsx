@@ -40,7 +40,7 @@ export default function OverviewPage() {
           </p>
         </div>
         {canManage ? (
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/events/new">
               <Plus className="size-4" />
               New event

@@ -139,7 +139,7 @@ function ResponsesTab({ eventId, canManage }: { eventId: string; canManage: bool
       if (c.key === "_submittedAt") return <span className="text-fg-secondary">{formatDateTime(r.submittedAt)}</span>;
       const v = r.answers[c.key];
       if (Array.isArray(v)) return v.join(", ");
-      if (v === undefined || v === null || v === "") return <span className="text-fg-muted">—</span>;
+      if (v === undefined || v === null || v === "") return <span className="text-fg-muted">N/A</span>;
       return String(v);
     },
   }));

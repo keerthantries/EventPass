@@ -63,12 +63,13 @@ export default function LoginPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+    <Card className="overflow-hidden shadow-lg">
+      <div className="h-0.5 bg-gradient-to-r from-primary via-primary-hover to-secondary" aria-hidden />
+      <CardHeader className="px-5 pb-1 pt-5">
+        <CardTitle className="text-base">Sign in</CardTitle>
         <CardDescription>Access your EventPass workspace.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="space-y-4"
@@ -97,7 +98,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="pr-9"
+                className="pr-11"
                 {...register("password")}
               />
               <button
@@ -105,12 +106,12 @@ export default function LoginPage() {
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
                 aria-pressed={showPassword}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center text-fg-muted transition-colors hover:text-fg"
+                className="absolute right-0 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center text-fg-muted transition-colors hover:text-fg sm:right-0 sm:size-9"
               >
                 {showPassword ? (
-                  <EyeOff className="size-4" />
+                  <EyeOff className="size-5" />
                 ) : (
-                  <Eye className="size-4" />
+                  <Eye className="size-5" />
                 )}
               </button>
             </div>
@@ -118,7 +119,7 @@ export default function LoginPage() {
               <p className="text-xs text-danger">{errors.password.message}</p>
             ) : null}
           </div>
-          <Button type="submit" className="w-full" loading={submitting}>
+          <Button type="submit" size="lg" className="w-full" loading={submitting}>
             Sign in
           </Button>
         </form>

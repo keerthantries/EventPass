@@ -148,7 +148,7 @@ export default function InvitationsPage() {
           />
         </div>
         <Select value={side} onValueChange={(v) => { setSide(v); setPage(1); }}>
-          <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectTrigger className="h-11 w-32 text-sm sm:h-8 sm:text-xs">
             <SelectValue placeholder="Side" />
           </SelectTrigger>
           <SelectContent>
@@ -158,7 +158,7 @@ export default function InvitationsPage() {
           </SelectContent>
         </Select>
         <Select value={invitationStatus} onValueChange={(v) => { setInvitationStatus(v); setPage(1); }}>
-          <SelectTrigger className="h-8 w-36 text-xs">
+          <SelectTrigger className="h-11 w-36 text-sm sm:h-8 sm:text-xs">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

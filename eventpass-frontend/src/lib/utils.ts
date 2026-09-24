@@ -6,16 +6,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(value: string | Date | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "N/A";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
 export function formatDateTime(value: string | Date | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "N/A";
   return d.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
@@ -25,9 +25,9 @@ export function formatDateTime(value: string | Date | null | undefined): string 
 }
 
 export function formatTime(value: string | Date | null | undefined): string {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "N/A";
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 

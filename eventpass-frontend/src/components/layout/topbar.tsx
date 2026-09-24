@@ -43,7 +43,7 @@ function titleFor(pathname: string): string {
   const eventMatch = pathname.match(/^\/events\/[^/]+(?:\/([^/]+))?/);
   if (eventMatch) {
     const segment = eventMatch[1];
-    if (!segment) return "Event";
+    if (!segment) return "Guests";
     return eventSegmentTitles[segment] ?? "Event";
   }
   if (pathname.startsWith("/events")) return "Events";
@@ -57,11 +57,11 @@ export function Topbar({ onOpenMobileNav }: TopbarProps) {
   const title = titleFor(pathname);
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 backdrop-blur">
+    <header className="sticky top-0 z-30 flex min-h-14 items-center gap-3 border-b border-border bg-bg/80 px-4 pb-1 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur md:pb-1 md:pt-1">
       <button
         type="button"
         onClick={onOpenMobileNav}
-        className="inline-flex size-9 items-center justify-center rounded-md text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg md:hidden"
+        className="inline-flex size-11 items-center justify-center rounded-md text-fg-secondary transition-colors hover:bg-surface-2 hover:text-fg md:hidden"
         aria-label="Open navigation"
       >
         <Menu className="size-5" />

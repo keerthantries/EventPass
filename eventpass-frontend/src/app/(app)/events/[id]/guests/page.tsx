@@ -166,7 +166,7 @@ export default function GuestsPage() {
           ) : g.side ? (
             <span className="text-fg-muted">{g.side}&apos;s Family</span>
           ) : (
-            <span className="text-fg-muted">—</span>
+            <span className="text-fg-muted">N/A</span>
           ),
       },
       {
@@ -174,7 +174,7 @@ export default function GuestsPage() {
         header: "Category",
         hideOnMobile: true,
         cell: (g) =>
-          g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "—"} /> : <span className="text-fg-muted">—</span>,
+          g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "N/A"} /> : <span className="text-fg-muted">N/A</span>,
       },
       {
         key: "contact",
@@ -182,7 +182,7 @@ export default function GuestsPage() {
         cell: (g) => {
           const email = canManage ? g.email : undefined;
           const phone = canManage ? g.phone : undefined;
-          if (!email && !phone) return <span className="text-fg-muted">—</span>;
+          if (!email && !phone) return <span className="text-fg-muted">N/A</span>;
           return (
             <div className="min-w-0 text-xs text-fg-secondary">
               {email ? (
@@ -203,7 +203,7 @@ export default function GuestsPage() {
         key: "side",
         header: "Side",
         hideOnMobile: true,
-        cell: (g) => g.side ? <Badge variant={g.side === "Bride" ? "primary" : "secondary"}>{g.side}</Badge> : <span className="text-fg-muted">—</span>,
+        cell: (g) => g.side ? <Badge variant={g.side === "Bride" ? "primary" : "secondary"}>{g.side}</Badge> : <span className="text-fg-muted">N/A</span>,
       },
       {
         key: "isVip",
@@ -211,7 +211,7 @@ export default function GuestsPage() {
         hideOnMobile: true,
         className: "w-16 text-center",
         headerClassName: "text-center",
-        cell: (g) => g.isVip ? <Crown className="size-4 mx-auto text-yellow-500" /> : <span className="text-fg-muted">—</span>,
+        cell: (g) => g.isVip ? <Crown className="size-4 mx-auto text-yellow-500" /> : <span className="text-fg-muted">N/A</span>,
       },
       {
         key: "invitationStatus",
@@ -230,7 +230,7 @@ export default function GuestsPage() {
           g.invitationOpenedAt ? (
             <span className="text-xs text-fg-secondary">{formatDateTime(g.invitationOpenedAt)}</span>
           ) : (
-            <span className="text-fg-muted">—</span>
+            <span className="text-fg-muted">N/A</span>
           ),
       },
       ...(event?.config?.modules.rsvp
@@ -253,7 +253,7 @@ export default function GuestsPage() {
         key: "checkInTime",
         header: "Check-in",
         hideOnMobile: true,
-        cell: (g) => <span className="text-fg-secondary">{g.checkInTime ? formatDateTime(g.checkInTime) : "—"}</span>,
+        cell: (g) => <span className="text-fg-secondary">{g.checkInTime ? formatDateTime(g.checkInTime) : "N/A"}</span>,
       },
       ...(canManage
         ? [
@@ -641,59 +641,24 @@ export default function GuestsPage() {
     </>
   );
 
-  const exportMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm">
-          <Download className="size-4" />
-          Export
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Export guests</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => handleDownload(`/events/${eventId}/guests/export?format=csv`)}>CSV</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleDownload(`/events/${eventId}/guests/export?format=xlsx`)}>XLSX</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => handleDownload(`/events/${eventId}/guests/qr/download-all`)}>
-          <QrCode className="size-4" />
-          Download all QR codes (ZIP)
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
-  const desktopHeaderActions = (
-    <div className="hidden flex-wrap items-center gap-2 sm:flex">
-      <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
-        <Upload className="size-4" />
-        Import
-      </Button>
-      <Button variant="secondary" size="sm" onClick={() => setFamilyOpen(true)}>
-        <Link2 className="size-4" />
-        Family links
-      </Button>
-      {exportMenu}
-      <Button size="sm" onClick={() => setCreateOpen(true)}>
+  const headerActions = canManage ? (
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <Button size="sm" onClick={() => setCreateOpen(true)} className="min-w-0 flex-1 sm:flex-none">
         <Plus className="size-4" />
         Add guest
       </Button>
-    </div>
-  );
-
-  const mobileHeaderActions = (
-    <div className="sm:hidden">
+      <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)} className="min-w-0 flex-1 sm:flex-none">
+        <Upload className="size-4" />
+        Import
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="secondary" size="sm">
+          <Button variant="secondary" size="sm" className="shrink-0">
             <MoreHorizontal className="size-4" />
             Actions
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => setImportOpen(true)}>
-            <Upload className="size-4" />
-            Import guests
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setFamilyOpen(true)}>
             <Link2 className="size-4" />
             Family links
@@ -706,29 +671,17 @@ export default function GuestsPage() {
             <QrCode className="size-4" />
             All QR codes (ZIP)
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            Add guest
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  ) : undefined;
 
   return (
     <div>
       <PageHeader
         title="Guests"
         description={`${data?.meta?.total ?? 0} guests · invitation, RSVP and check-in status`}
-        actions={
-          canManage ? (
-            <>
-              {mobileHeaderActions}
-              {desktopHeaderActions}
-            </>
-          ) : undefined
-        }
+        actions={headerActions}
       />
 
       <DataTable
@@ -738,9 +691,15 @@ export default function GuestsPage() {
         meta={data?.meta}
         onPageChange={setPage}
         sort={sort}
-        onSortChange={setSort}
+        onSortChange={(s) => {
+          setSort(s);
+          setPage(1);
+        }}
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={(q) => {
+          setSearch(q);
+          setPage(1);
+        }}
         searchPlaceholder="Search by name, email or phone..."
         selected={canManage ? selected : undefined}
         onSelectionChange={canManage ? setSelected : undefined}

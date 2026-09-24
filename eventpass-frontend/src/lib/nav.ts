@@ -37,8 +37,8 @@ export interface EventNavItem {
 }
 
 export const eventNav: EventNavItem[] = [
-  { href: "/overview", label: "Overview", icon: LayoutDashboard, roles: ["super_admin", "organizer", "security"] },
   { href: "/guests", label: "Guests", icon: Users, roles: ["super_admin", "organizer", "security"] },
+  { href: "/overview", label: "Overview", icon: LayoutDashboard, roles: ["super_admin", "organizer", "security"] },
   { href: "/categories", label: "Categories", icon: Tags, roles: ["super_admin", "organizer"] },
   { href: "/forms", label: "Forms", icon: ClipboardList, roles: ["super_admin", "organizer"] },
   { href: "/invitations", label: "Invitations", icon: Mail, roles: ["super_admin", "organizer"] },

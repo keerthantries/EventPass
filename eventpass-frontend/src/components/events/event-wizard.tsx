@@ -263,6 +263,10 @@ export function EventWizard() {
   };
 
   const onSubmit = async (values: WizardValues) => {
+    if (step < STEPS.length - 1) {
+      await goNext();
+      return;
+    }
     if (submitted) return;
     setSubmitted(true);
     const payload = {
@@ -293,7 +297,7 @@ export function EventWizard() {
         description: values.publish === "published" ? "Your event is now live." : "Draft saved — publish it when you're ready.",
         variant: "success",
       });
-      router.push(`/events/${created.id}`);
+      router.push(`/events/${created.id}/guests`);
       router.refresh();
     } catch (err) {
       setSubmitted(false);
@@ -307,7 +311,9 @@ export function EventWizard() {
 
   const formatDateTime = () => {
     const v = getValues();
-    const parts = [v.startDate];
+    if (!v.startDate && !v.endDate) return "Date not set";
+    const parts: string[] = [];
+    if (v.startDate) parts.push(v.startDate);
     if (v.endDate) parts.push(v.endDate);
     return `${parts.join(" → ")}${v.startTime ? ` · ${v.startTime}${v.endTime ? `–${v.endTime}` : ""}` : ""}`;
   };
@@ -320,7 +326,7 @@ export function EventWizard() {
       <Card className="mx-auto max-w-3xl">
         <CardContent className="p-6 sm:p-8">
           {/* Stepper */}
-          <ol className="mb-8 flex items-center gap-0">
+          <ol className="mb-3 flex items-center gap-0 sm:mb-8">
             {STEPS.map((s, i) => (
               <li key={s.title} className={cn("flex items-center", i < STEPS.length - 1 && "flex-1")}>
                 <button
@@ -349,7 +355,12 @@ export function EventWizard() {
               </li>
             ))}
           </ol>
+          <p className="mb-6 text-xs text-fg-muted sm:hidden">
+            Step {step + 1} of {STEPS.length} · {STEPS[step].title}
+          </p>
 
+          {/* Step content */}
+          <div key={step} className="animate-fade-in">
           {/* Step 1 — Basics */}
           {step === 0 ? (
             <div className="space-y-5">
@@ -381,7 +392,7 @@ export function EventWizard() {
                   {errors.type ? <p className="text-xs text-danger">{errors.type.message}</p> : null}
                   {/wed|marri|bride|groom|shaadi|ceremony|nuptial/i.test(type ?? "") ? (
                     <p className="text-xs text-primary">
-                      Wedding event — we'll pre-add category groups like Bride's Guests and Groom's Guests.
+                      Wedding event — we&apos;ll pre-add category groups like Bride&apos;s Guests and Groom&apos;s Guests.
                     </p>
                   ) : null}
                 </div>
@@ -657,7 +668,7 @@ export function EventWizard() {
                   <div>
                     <p className="text-sm font-semibold text-fg">{name}</p>
                     <p className="text-xs text-fg-secondary">
-                      {type}
+                      {type || "N/A"}
                       {venue ? ` · ${venue}` : ""}
                     </p>
                   </div>
@@ -721,20 +732,21 @@ export function EventWizard() {
               </div>
             </div>
           ) : null}
+          </div>
 
           {/* Footer nav */}
-          <div className="mt-8 flex items-center justify-between gap-2 border-t border-border pt-5">
-            <Button type="button" variant="ghost" onClick={goBack} disabled={step === 0 || isSubmitting}>
+          <div className="mt-8 flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <Button type="button" variant="ghost" onClick={goBack} disabled={step === 0 || isSubmitting} className="sm:w-auto">
               <ArrowLeft className="size-4" />
               Back
             </Button>
             {step < STEPS.length - 1 ? (
-              <Button type="button" onClick={goNext}>
+              <Button type="button" onClick={goNext} className="sm:w-auto">
                 Continue
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="submit" loading={isSubmitting || submitted}>
+              <Button type="submit" loading={isSubmitting || submitted} className="sm:w-auto">
                 {publish === "published" ? (
                   <>
                     <Rocket className="size-4" />

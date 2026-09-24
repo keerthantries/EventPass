@@ -108,7 +108,7 @@ export default function EventsPage() {
         description="Create and manage your events."
         actions={
           canManage ? (
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/events/new">
                 <Plus className="size-4" />
                 New event
@@ -126,9 +126,15 @@ export default function EventsPage() {
         onPageChange={setPage}
         onRowClick={(e) => router.push(`/events/${e.id}`)}
         sort={sort}
-        onSortChange={setSort}
+        onSortChange={(s) => {
+          setSort(s);
+          setPage(1);
+        }}
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={(q) => {
+          setSearch(q);
+          setPage(1);
+        }}
         searchPlaceholder="Search events..."
         toolbar={
           <Select value={status} onValueChange={(v) => {

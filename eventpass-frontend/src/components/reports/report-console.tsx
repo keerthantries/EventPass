@@ -62,7 +62,7 @@ function AttendanceReportTab({ eventId }: { eventId: string }) {
 
   const columns: DataTableColumn<import("@/lib/types").AttendanceReportRow>[] = [
     { key: "guestName", header: "Guest", primary: true, hideOnMobile: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
-    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
+    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "N/A"}</span> },
     { key: "attendanceStatus", header: "Attendance", cell: (r) => <Badge variant={attendanceBadge(r.attendanceStatus).variant}>{attendanceBadge(r.attendanceStatus).label}</Badge> },
     { key: "checkInTime", header: "Check-in time", cell: (r) => <span className="text-fg-secondary">{r.checkInTime ? formatDateTime(r.checkInTime) : "Not checked in"}</span> },
   ];
@@ -150,7 +150,7 @@ function RsvpReportTab({ eventId }: { eventId: string }) {
 
   const columns: DataTableColumn<import("@/lib/types").RsvpReportRow>[] = [
     { key: "guestName", header: "Guest", primary: true, hideOnMobile: true, cell: (r) => <span className="font-medium text-fg">{r.guestName}</span> },
-    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "—"}</span> },
+    { key: "category", header: "Category", hideOnMobile: true, cell: (r) => <span className="text-fg-secondary">{r.category ?? "N/A"}</span> },
     { key: "rsvpStatus", header: "RSVP", cell: (r) => <Badge variant={rsvpBadge(r.rsvpStatus).variant}>{rsvpBadge(r.rsvpStatus).label}</Badge> },
     { key: "rsvpRespondedAt", header: "Responded", cell: (r) => <span className="text-fg-secondary">{r.rsvpRespondedAt ? formatDateTime(r.rsvpRespondedAt) : "Not responded"}</span> },
   ];

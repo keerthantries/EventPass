@@ -69,14 +69,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Create an account</CardTitle>
+    <Card className="overflow-hidden shadow-lg">
+      <div className="h-0.5 bg-gradient-to-r from-primary via-primary-hover to-secondary" aria-hidden />
+      <CardHeader className="px-5 pb-1 pt-5">
+        <CardTitle className="text-base">Create an account</CardTitle>
         <CardDescription>
           Organizers register here. Your first event is a few clicks away.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="space-y-4"
@@ -135,7 +136,7 @@ export default function RegisterPage() {
               </p>
             ) : null}
           </div>
-          <Button type="submit" className="w-full" loading={submitting}>
+          <Button type="submit" size="lg" className="w-full" loading={submitting}>
             Create account
           </Button>
         </form>

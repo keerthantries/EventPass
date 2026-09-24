@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenMobileNav={() => setMobileNavOpen(true)} />
         <main className="flex-1">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-24 md:px-6 md:pb-6">{children}</div>
+          <div className="mx-auto w-full max-w-6xl px-4 py-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:px-6 md:pb-6">{children}</div>
         </main>
       </div>
 
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={item.href}
                   onClick={() => setMobileNavOpen(false)}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium transition-colors sm:py-2",
                     active ? "bg-surface-2 text-fg" : "text-fg-secondary hover:bg-surface-2/60 hover:text-fg"
                   )}
                 >
