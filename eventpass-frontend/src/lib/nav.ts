@@ -8,7 +8,7 @@ import {
   Tags,
   ClipboardList,
   Mail,
-  Send,
+  UserCog,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/types";
@@ -26,6 +26,7 @@ export const globalNav: NavItem[] = [
   { href: "/attendance", label: "Attendance", icon: ScanLine, roles: ["super_admin", "organizer", "security"] },
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["super_admin", "organizer"] },
   { href: "/team", label: "Team", icon: Users, roles: ["super_admin", "organizer"] },
+  { href: "/users", label: "Users", icon: UserCog, roles: ["super_admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["super_admin", "organizer", "security"] },
 ];
 

@@ -27,6 +27,7 @@ const schema = z.object({
   phone: z.string().max(20).optional().or(z.literal("")),
   category: z.string().optional(),
   side: z.string().optional(),
+  reservedTable: z.string().max(50).optional().or(z.literal("")),
   isVip: z.boolean().optional(),
   isImmediateFamily: z.boolean().optional(),
   notes: z.string().max(1000).optional().or(z.literal("")),
@@ -63,6 +64,7 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
       phone: guest?.phone ?? "",
       category: guest?.categoryId ?? "",
       side: guest?.side ?? "",
+      reservedTable: guest?.reservedTable ?? "",
       isVip: guest?.isVip ?? false,
       isImmediateFamily: guest?.isImmediateFamily ?? false,
       notes: guest?.notes ?? "",
@@ -81,6 +83,7 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
       phone: values.phone || undefined,
       category: values.category && values.category !== "none" ? values.category : undefined,
       side: values.side && values.side !== "none" ? values.side : undefined,
+      reservedTable: values.reservedTable || (mode === "edit" ? "" : undefined),
       isVip: values.isVip || false,
       isImmediateFamily: values.isImmediateFamily || false,
       notes: values.notes || undefined,
@@ -169,6 +172,15 @@ export function GuestForm({ eventId, mode, guest, onSuccess, onCancel }: GuestFo
               <SelectItem value="Groom">Groom</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="reservedTable">
+            Reserved table <span className="font-normal text-fg-muted">(optional)</span>
+          </Label>
+          <Input id="reservedTable" placeholder="e.g. T12, Head Table" maxLength={50} {...register("reservedTable")} />
+          {errors.reservedTable ? <p className="text-xs text-danger">{errors.reservedTable.message}</p> : null}
         </div>
       </div>
       <div className="flex items-center gap-6">

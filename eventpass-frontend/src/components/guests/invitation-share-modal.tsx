@@ -76,6 +76,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
     : { dayName: "", month: "", dayNumber: 0, year: 0 };
 
   const shareParts: string[] = [`You're invited to ${brideName} & ${groomName}'s wedding!`];
+  if (guest?.reservedTable) shareParts.push(`Reserved table: ${guest.reservedTable}`);
   shareParts.push("", "RSVP here:", inviteUrl);
   const shareMessage = shareParts.filter(Boolean).join("\n");
 
@@ -335,6 +336,11 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
             <div className="mt-3 text-center">
               <div className="modal-guest-label modal-gold-text">PREPARED FOR</div>
               <div className="modal-guest-name modal-gold-text">{guest.fullName}</div>
+              {guest.reservedTable ? (
+                <div className="modal-guest-label modal-gold-text" style={{ marginTop: 4 }}>
+                  RESERVED TABLE: {guest.reservedTable}
+                </div>
+              ) : null}
             </div>
           )}
         </div>

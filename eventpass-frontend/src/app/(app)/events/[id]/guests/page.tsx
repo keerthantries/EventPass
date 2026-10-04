@@ -62,6 +62,7 @@ import {
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription, ModalBody } from "@/components/ui/modal";
 import { GuestForm } from "@/components/guests/guest-form";
 import { GuestImportForm } from "@/components/guests/guest-import-form";
+import { ReservedTableCell } from "@/components/guests/reserved-table-cell";
 import { GuestQrModal } from "@/components/guests/guest-qr-modal";
 import { InvitationShareModal } from "@/components/guests/invitation-share-modal";
 import { rsvpBadge, attendanceBadge, approvalBadge, CategoryDot } from "@/components/guests/guest-badges";
@@ -175,6 +176,13 @@ export default function GuestsPage() {
         hideOnMobile: true,
         cell: (g) =>
           g.categoryId ? <CategoryDot color={categories?.find((c) => c._id === g.categoryId)?.colorTag} name={categoryMap.get(g.categoryId) ?? "N/A"} /> : <span className="text-fg-muted">N/A</span>,
+      },
+      {
+        key: "reservedTable",
+        header: "Table",
+        cell: (g) => (
+          <ReservedTableCell key={`${g._id}:${g.reservedTable ?? ""}`} eventId={eventId} guest={g} canManage={canManage} />
+        ),
       },
       {
         key: "contact",
@@ -303,7 +311,7 @@ export default function GuestsPage() {
       },
     ];
     return cols;
-  }, [canManage, categories, categoryMap, event]);
+  }, [canManage, categories, categoryMap, event, eventId]);
 
   const handleDelete = async (guest: Guest) => {
     if (!window.confirm(`Delete ${guest.fullName}? This cannot be undone.`)) return;
@@ -364,6 +372,7 @@ export default function GuestsPage() {
       url,
       "",
       event?.venue ? `Venue: ${event.venue}` : "Venue: Woodbine Banquet Hall",
+      ...(guest.reservedTable ? [`Reserved table: ${guest.reservedTable}`] : []),
       event?.dressCode ? `Dress Code: ${event.dressCode}` : "Dress Code: Traditional Clothing / Black Tie",
       "",
       "For additional wedding information:",
@@ -735,6 +744,7 @@ export default function GuestsPage() {
           const parts: string[] = [];
           if (g.partyName) parts.push(g.partyName);
           else if (g.side) parts.push(`${g.side}'s family`);
+          if (g.reservedTable) parts.push(`Table ${g.reservedTable}`);
           if (g.isVip) parts.push("VIP");
           if (g.isImmediateFamily) parts.push("Immediate Family");
           parts.push(inviteBadge(g.invitationStatus).label);
@@ -839,7 +849,7 @@ export default function GuestsPage() {
         <ModalContent>
           <ModalHeader>
             <ModalTitle>Import guests</ModalTitle>
-            <ModalDescription>Upload a CSV with columns: first name, last name, email, phone, category, party/family id, party/family name, side, vip, immediate family, notes.</ModalDescription>
+            <ModalDescription>Upload a CSV with columns: first name, last name, email, phone, category, party/family id, party/family name, side, table, vip, immediate family, notes.</ModalDescription>
           </ModalHeader>
           <ModalBody>
             <GuestImportForm eventId={eventId} onDone={() => setImportOpen(false)} />

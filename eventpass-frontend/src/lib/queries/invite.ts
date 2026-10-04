@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api";
-import type { Invitation, InvitationSubmitResult, FormSubmitResult, SecurityStaff } from "@/lib/types";
+import type { Invitation, InvitationSubmitResult, FormSubmitResult, SecurityStaff, TeamOverviewGroup } from "@/lib/types";
 
 export async function getInvitation(token: string): Promise<Invitation> {
   const { data } = await apiRequest<Invitation>(`/public/invite/${encodeURIComponent(token)}`);
@@ -24,6 +24,11 @@ export async function submitForm(token: string, answers: Record<string, unknown>
 
 export async function listSecurityStaff(): Promise<SecurityStaff[]> {
   const { data } = await apiRequest<SecurityStaff[]>("/auth/security-staff");
+  return data;
+}
+
+export async function listTeamOverview(): Promise<TeamOverviewGroup[]> {
+  const { data } = await apiRequest<TeamOverviewGroup[]>("/auth/security-staff/overview");
   return data;
 }
 

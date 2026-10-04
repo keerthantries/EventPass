@@ -45,9 +45,11 @@ import {
   submitRsvp,
   submitForm,
   listSecurityStaff,
+  listTeamOverview,
   createSecurityStaff,
   deactivateSecurityStaff,
 } from "@/lib/queries/invite";
+import { listUsers } from "@/lib/queries/users";
 import type { EventListItem, EventDetail, Guest, Category, InvitationChannel } from "@/lib/types";
 
 export const qk = {
@@ -70,6 +72,9 @@ export const qk = {
   invitation: (token: string) => ["invitation", token] as const,
   parties: (eventId: string) => ["parties", eventId] as const,
   team: () => ["team"] as const,
+  teamOverview: () => ["team-overview"] as const,
+  users: (params?: Record<string, string>) =>
+    params && Object.keys(params).length > 0 ? (["users", params] as const) : (["users"] as const),
 };
 
 export function useEvents(params?: Record<string, string>) {
@@ -431,11 +436,29 @@ export function useTeam() {
   });
 }
 
+export function useTeamOverview() {
+  return useQuery({
+    queryKey: qk.teamOverview(),
+    queryFn: () => listTeamOverview(),
+  });
+}
+
+export function useUsers(params?: Record<string, string>) {
+  const p = params ?? {};
+  return useQuery({
+    queryKey: qk.users(p),
+    queryFn: () => listUsers(p),
+  });
+}
+
 export function useCreateSecurityStaff() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: { name: string; email: string; password: string }) => createSecurityStaff(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.team() }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.team() });
+      qc.invalidateQueries({ queryKey: qk.teamOverview() });
+    },
   });
 }
 
@@ -443,7 +466,10 @@ export function useDeactivateSecurityStaff() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deactivateSecurityStaff(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.team() }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.team() });
+      qc.invalidateQueries({ queryKey: qk.teamOverview() });
+    },
   });
 }
 

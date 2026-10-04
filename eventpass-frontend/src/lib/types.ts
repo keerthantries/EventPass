@@ -122,6 +122,7 @@ export interface Guest {
   phone?: string;
   notes?: string;
   side?: string;
+  reservedTable?: string | null;
   isVip?: boolean;
   isImmediateFamily?: boolean;
   invitationToken?: string;
@@ -265,6 +266,7 @@ export interface RsvpReportRow {
 export interface ImportResult {
   totalRows: number;
   imported: number;
+  updated?: number;
   skippedDuplicates: number;
   failed: number;
   errors: { row: number; reason: string }[];
@@ -275,6 +277,33 @@ export interface SecurityStaff {
   name: string;
   email: string;
   isActive: boolean;
+  organizerId?: string | null;
+  organizerName?: string | null;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  organizerId: string | null;
+  organizerName: string | null;
+  organizerEmail: string | null;
+  createdAt: string;
+}
+
+export interface TeamOverviewEvent {
+  id: string;
+  name: string;
+  status: EventStatus;
+  startDate: string;
+}
+
+export interface TeamOverviewGroup {
+  organizer: { id: string; name: string; email: string };
+  events: TeamOverviewEvent[];
+  staff: SecurityStaff[];
 }
 
 export interface Invitation {
@@ -307,6 +336,7 @@ export interface Invitation {
     qrToken?: string;
     partyName?: string;
     side?: string;
+    reservedTable?: string | null;
     invitationToken?: string;
   };
   config: { modules: EventModules; rsvpMode: RsvpMode };

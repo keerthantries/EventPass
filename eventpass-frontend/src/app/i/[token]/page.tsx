@@ -248,7 +248,7 @@ export default function InvitePage({
           60% { transform: scale(1); }
         }
         .heart-icon {
-          display: inline-block; font-size: 18px;
+          display: inline-block; font-size: 3.91cqw;
           animation: heartbeat 1.5s ease-in-out infinite;
           filter: drop-shadow(0 0 6px rgba(197,155,39,0.5));
         }
@@ -269,8 +269,16 @@ export default function InvitePage({
           -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
 
+        /* The stage is the sizing container: everything inside the card uses
+           cqw units (1% of stage width) so the card scales as one rigid piece
+           — same proportions, same line breaks, on every screen size. */
+        .card-stage {
+          width: 100%; max-width: 460px;
+          container-type: inline-size;
+        }
+
         .card {
-          background-color: #fcfbfa; width: 100%; max-width: 460px; padding: 15px;
+          background-color: #fcfbfa; width: 100%; padding: 3.26cqw;
           box-shadow: 0 10px 40px rgba(0,0,0,0.10), 0 2px 10px rgba(197,155,39,0.08);
           aspect-ratio: 1 / 1.35; display: flex; flex-direction: column;
           transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
@@ -278,45 +286,45 @@ export default function InvitePage({
         }
 
         .card-inner-border {
-          border: 2.5px solid #c59b27; padding: 18px 20px; position: relative;
+          border: 0.54cqw solid #c59b27; padding: 3.91cqw 4.35cqw; position: relative;
           text-align: center; height: 100%; display: flex; flex-direction: column;
           justify-content: space-between; align-items: center;
           animation: borderGlow 3s ease-in-out infinite;
           overflow: hidden;
         }
         .card-inner-border::before {
-          content: ""; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
-          border: 2.5px solid #c59b27; pointer-events: none;
+          content: ""; position: absolute; top: 0.65cqw; left: 0.65cqw; right: 0.65cqw; bottom: 0.65cqw;
+          border: 0.54cqw solid #c59b27; pointer-events: none;
         }
 
-        .bismillah-img-container { margin-bottom: 4px; width: 100%; display: flex; justify-content: center; }
-        .bismillah-img { max-width: 160px; width: 100%; height: auto; display: block; }
+        .bismillah-img-container { margin-bottom: 0.87cqw; width: 100%; display: flex; justify-content: center; }
+        .bismillah-img { max-width: 34.78cqw; width: 100%; height: auto; display: block; }
 
-        .quran-quote { font-family: "Cinzel", serif; font-size: 8.5px; letter-spacing: 1.2px; margin-bottom: 2px; font-weight: 600; }
-        .quran-ref { font-family: "Cinzel", serif; font-size: 8px; letter-spacing: 1px; margin-bottom: 12px; font-weight: 600; }
+        .quran-quote { font-family: "Cinzel", serif; font-size: 1.85cqw; letter-spacing: 0.26cqw; margin-bottom: 0.43cqw; font-weight: 600; }
+        .quran-ref { font-family: "Cinzel", serif; font-size: 1.74cqw; letter-spacing: 0.22cqw; margin-bottom: 2.61cqw; font-weight: 600; }
 
-        .invitation-text { font-family: "Cinzel", serif; font-size: 8.5px; letter-spacing: 1.2px; line-height: 1.6; max-width: 320px; margin-bottom: 8px; font-weight: 600; }
+        .invitation-text { font-family: "Cinzel", serif; font-size: 1.85cqw; letter-spacing: 0.26cqw; line-height: 1.6; max-width: 69.57cqw; margin-bottom: 1.74cqw; font-weight: 600; }
 
-        .names-container { margin-bottom: 12px; }
-        .name { font-family: "Alex Brush", cursive; font-size: 44px; line-height: 1.05; font-weight: 400; text-transform: capitalize; }
-        .ampersand { font-family: "Alex Brush", cursive; font-size: 28px; margin: 2px 0; display: block; }
+        .names-container { margin-bottom: 2.61cqw; }
+        .name { font-family: "Alex Brush", cursive; font-size: 9.57cqw; line-height: 1.05; font-weight: 400; text-transform: capitalize; }
+        .ampersand { font-family: "Alex Brush", cursive; font-size: 6.09cqw; margin: 0.43cqw 0; display: block; }
 
-        .date-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 12px; }
-        .day-name { font-family: "Cinzel", serif; font-size: 10.5px; letter-spacing: 2px; font-weight: 600; margin-bottom: 2px; }
-        .date-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .date-block { display: flex; flex-direction: column; align-items: center; width: 80px; }
-        .date-block span { font-family: "Cinzel", serif; font-size: 10.5px; letter-spacing: 2px; font-weight: 600; padding: 2px 0; }
-        .date-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #c59b27, transparent); }
-        .day-number { font-family: "Playfair Display", serif; font-size: 38px; font-weight: 400; line-height: 1; }
-        .guest-arrival { font-family: "Cinzel", serif; font-size: 8.5px; letter-spacing: 1.5px; margin-top: 4px; font-weight: 600; }
-        .start-time { font-family: "Cinzel", serif; font-size: 9.5px; letter-spacing: 2px; margin-top: 4px; font-weight: 600; }
-        .dress-code { font-family: "Cinzel", serif; font-size: 8px; letter-spacing: 1.5px; margin-top: 8px; font-weight: 600; text-align: center; }
+        .date-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 2.61cqw; }
+        .day-name { font-family: "Cinzel", serif; font-size: 2.28cqw; letter-spacing: 0.43cqw; font-weight: 600; margin-bottom: 0.43cqw; }
+        .date-row { display: flex; align-items: center; justify-content: center; gap: 2.17cqw; }
+        .date-block { display: flex; flex-direction: column; align-items: center; width: 17.39cqw; }
+        .date-block span { font-family: "Cinzel", serif; font-size: 2.28cqw; letter-spacing: 0.43cqw; font-weight: 600; padding: 0.43cqw 0; }
+        .date-line { width: 100%; height: 0.22cqw; background: linear-gradient(90deg, transparent, #c59b27, transparent); }
+        .day-number { font-family: "Playfair Display", serif; font-size: 8.26cqw; font-weight: 400; line-height: 1; }
+        .guest-arrival { font-family: "Cinzel", serif; font-size: 1.85cqw; letter-spacing: 0.33cqw; margin-top: 0.87cqw; font-weight: 600; }
+        .start-time { font-family: "Cinzel", serif; font-size: 2.07cqw; letter-spacing: 0.43cqw; margin-top: 0.87cqw; font-weight: 600; }
+        .dress-code { font-family: "Cinzel", serif; font-size: 1.74cqw; letter-spacing: 0.33cqw; margin-top: 1.74cqw; font-weight: 600; text-align: center; }
 
-        .venue-container { margin-top: 2px; }
-        .venue-name { font-family: "Alex Brush", cursive; font-size: 24px; margin-bottom: 2px; }
+        .venue-container { margin-top: 0.43cqw; }
+        .venue-name { font-family: "Alex Brush", cursive; font-size: 5.22cqw; margin-bottom: 0.43cqw; }
         .venue-address {
-          font-family: "Playfair Display", serif; font-style: italic; font-size: 11.5px;
-          letter-spacing: 0.5px; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;
+          font-family: "Playfair Display", serif; font-style: italic; font-size: 2.5cqw;
+          letter-spacing: 0.11cqw; line-height: 1.3; word-wrap: break-word; overflow-wrap: break-word;
           hyphens: auto; max-width: 100%;
         }
 
@@ -329,6 +337,12 @@ export default function InvitePage({
         .guest-card:hover { transform: translateY(-2px); }
         .guest-card-label { font-family: "Cinzel", serif; font-size: 10px; letter-spacing: 2px; font-weight: 600; margin-bottom: 4px; }
         .guest-card-name { font-family: "Alex Brush", cursive; font-size: 28px; line-height: 1.2; }
+        .guest-card-table {
+          font-family: "Cinzel", serif; font-size: 11px; letter-spacing: 1.5px;
+          font-weight: 600; margin-top: 6px;
+          display: inline-block; padding: 4px 14px;
+          border: 1.5px solid #c59b27; border-radius: 999px;
+        }
 
         .qr-section {
           background-color: #fcfbfa; width: 100%; max-width: 460px; padding: 24px;
@@ -342,6 +356,7 @@ export default function InvitePage({
           box-shadow: 0 4px 15px rgba(0,0,0,0.08), 0 0 10px rgba(197,155,39,0.1);
         }
         .qr-name { font-family: "Alex Brush", cursive; font-size: 22px; margin-top: 12px; }
+        .qr-table { font-family: "Cinzel", serif; font-size: 12px; letter-spacing: 1.5px; font-weight: 700; margin-top: 6px; }
         .qr-date { font-family: "Cinzel", serif; font-size: 11px; color: #6b7280; margin-top: 4px; }
         .qr-note { font-family: "Cinzel", serif; font-size: 10px; color: #9ca3af; margin-top: 12px; letter-spacing: 0.5px; }
 
@@ -390,7 +405,8 @@ export default function InvitePage({
       <div className="invite-page">
         <Particles />
         <div className="invite-wrapper">
-          <div className="card animate-fade-in delay-1">
+          <div className="card-stage animate-fade-in delay-1">
+            <div className="card">
             <div className="card-inner-border">
               <div className="animate-fade-in delay-2">
                 {bismillahImageUrl && (
@@ -411,7 +427,7 @@ export default function InvitePage({
 
               <div className="names-container animate-fade-in delay-4">
                 <div className="name gold-text">{brideName}</div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "2px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "1.74cqw", margin: "0.43cqw 0" }}>
                   <span className="heart-icon gold-text">♥</span>
                 </div>
                 <div className="name gold-text">{groomName}</div>
@@ -454,11 +470,15 @@ export default function InvitePage({
                 )}
               </div>
             </div>
+            </div>
           </div>
 
           <div className="guest-card animate-fade-in delay-5">
             <div className="guest-card-label gold-text">THIS CARD IS PREPARED FOR</div>
             <div className="guest-card-name gold-text">{guest.fullName}</div>
+            {guest.reservedTable ? (
+              <div className="guest-card-table gold-text">RESERVED TABLE: {guest.reservedTable}</div>
+            ) : null}
           </div>
 
           {guest.qrToken && (
@@ -468,6 +488,9 @@ export default function InvitePage({
                 <QrCodeImage token={guest.qrToken} size={180} />
               </div>
               <div className="qr-name gold-text">{guest.fullName}</div>
+              {guest.reservedTable ? (
+                <div className="qr-table gold-text">TABLE {guest.reservedTable}</div>
+              ) : null}
               {dayNumber > 0 ? (
                 <div className="qr-date">{dayName} {month} {dayNumber}, {year}</div>
               ) : null}

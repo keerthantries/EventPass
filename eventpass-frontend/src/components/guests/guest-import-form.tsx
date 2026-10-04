@@ -16,9 +16,12 @@ export function GuestImportForm({ eventId, onDone }: { eventId: string; onDone?:
     if (!file) return;
     try {
       const result = await importMutation.mutateAsync(file);
+      const parts = [`${result.imported} imported`];
+      if (result.updated) parts.push(`${result.updated} tables updated`);
+      parts.push(`${result.skippedDuplicates} unchanged`, `${result.failed} failed`);
       toast({
         title: "Import complete",
-        description: `${result.imported} imported · ${result.skippedDuplicates} duplicates skipped · ${result.failed} failed`,
+        description: parts.join(" · "),
         variant: result.failed > 0 ? "warning" : "success",
       });
       onDone?.();
@@ -32,7 +35,7 @@ export function GuestImportForm({ eventId, onDone }: { eventId: string; onDone?:
       <FileUpload
         accept=".csv,.xlsx,.xls"
         label="Choose CSV or Excel file"
-        hint="Supports CSV and Excel (.xlsx). Columns: fullName, email, phone, category, notes (fullName required)"
+        hint="Supports CSV and Excel (.xlsx). Columns: fullName, email, phone, category, table, notes (fullName required)"
         onFile={setFile}
       />
       {importMutation.isError && !importMutation.data ? (
