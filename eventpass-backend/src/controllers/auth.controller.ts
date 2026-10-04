@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User';
+import { Event } from '../models/Event';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { sendSuccess } from '../utils/apiResponse';
 import { ApiError } from '../utils/ApiError';
@@ -99,15 +100,87 @@ export const createSecurityStaff = asyncHandler(async (req: Request, res: Respon
   return sendSuccess(res, { id: staff.id, name: staff.name, role: staff.role, organizerId }, 201);
 });
 
-/** GET /auth/security-staff — organizer lists their own Security accounts. */
+/** GET /auth/security-staff — organizer lists their own; super_admin lists all Security accounts. */
 export const listSecurityStaff = asyncHandler(async (req: Request, res: Response) => {
-  const staff = await User.find({ role: 'security', organizerId: req.user!.sub });
-  return sendSuccess(res, staff.map((s) => ({ id: s.id, name: s.name, email: s.email, isActive: s.isActive })));
+  const isAdmin = req.user!.role === 'super_admin';
+  const filter: Record<string, unknown> = { role: 'security' };
+  if (!isAdmin) filter.organizerId = req.user!.sub;
+
+  const staff = await User.find(filter).populate('organizerId', 'name email').sort({ createdAt: -1 });
+  return sendSuccess(
+    res,
+    staff.map((s) => {
+      const organizer = s.organizerId as { _id: unknown; name?: string; email?: string } | null;
+      return {
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        isActive: s.isActive,
+        organizerId: organizer ? String(organizer._id) : null,
+        organizerName: organizer?.name ?? null,
+      };
+    })
+  );
+});
+
+/** GET /auth/security-staff/overview — super_admin groups Security teams by organizer + their events. */
+export const listTeamOverview = asyncHandler(async (_req: Request, res: Response) => {
+  const [organizers, events, staff] = await Promise.all([
+    User.find({ role: 'organizer' }).sort({ name: 1 }).lean(),
+    Event.find({ status: { $ne: 'archived' } })
+      .select('name status startDate organizerId')
+      .sort({ startDate: -1 })
+      .lean(),
+    User.find({ role: 'security' }).sort({ name: 1 }).lean(),
+  ]);
+
+  const eventsByOrganizer = new Map<string, { id: string; name: string; status: string; startDate: string }[]>();
+  for (const e of events) {
+    const key = String(e.organizerId);
+    const list = eventsByOrganizer.get(key) ?? [];
+    list.push({
+      id: String(e._id),
+      name: e.name,
+      status: e.status,
+      startDate: e.startDate instanceof Date ? e.startDate.toISOString() : String(e.startDate),
+    });
+    eventsByOrganizer.set(key, list);
+  }
+
+  const staffByOrganizer = new Map<string, { id: string; name: string; email: string; isActive: boolean }[]>();
+  for (const s of staff) {
+    const key = s.organizerId ? String(s.organizerId) : 'unassigned';
+    const list = staffByOrganizer.get(key) ?? [];
+    list.push({ id: s.id, name: s.name, email: s.email, isActive: s.isActive });
+    staffByOrganizer.set(key, list);
+  }
+
+  const groups = organizers.map((o) => {
+    const key = String(o._id);
+    return {
+      organizer: { id: key, name: o.name, email: o.email },
+      events: eventsByOrganizer.get(key) ?? [],
+      staff: staffByOrganizer.get(key) ?? [],
+    };
+  });
+
+  const orphanStaff = staffByOrganizer.get('unassigned') ?? [];
+  if (orphanStaff.length > 0) {
+    groups.push({
+      organizer: { id: 'unassigned', name: 'Unassigned staff', email: 'N/A' },
+      events: [],
+      staff: orphanStaff,
+    });
+  }
+
+  return sendSuccess(res, groups);
 });
 
 /** DELETE /auth/security-staff/:id — deactivate, not hard-delete (preserves CheckinLog.scannedBy history). */
 export const deactivateSecurityStaff = asyncHandler(async (req: Request, res: Response) => {
-  const staff = await User.findOne({ _id: req.params.id, role: 'security', organizerId: req.user!.sub });
+  const filter: Record<string, unknown> = { _id: req.params.id, role: 'security' };
+  if (req.user!.role !== 'super_admin') filter.organizerId = req.user!.sub;
+  const staff = await User.findOne(filter);
   if (!staff) throw ApiError.notFound('Security staff account not found.');
   staff.isActive = false;
   await staff.save();

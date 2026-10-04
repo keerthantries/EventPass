@@ -17,6 +17,7 @@ export interface IGuest extends Document {
   phone?: string;
   notes?: string;
   side?: string;
+  reservedTable?: string | null;
   isVip: boolean;
   isImmediateFamily: boolean;
 
@@ -59,6 +60,7 @@ const guestSchema = new Schema<IGuest>(
     phone: { type: String, trim: true, maxlength: 20 },
     notes: { type: String, maxlength: 1000 },
     side: { type: String, trim: true, maxlength: 50 },
+    reservedTable: { type: String, trim: true, maxlength: 50, default: null },
     isVip: { type: Boolean, default: false },
     isImmediateFamily: { type: Boolean, default: false },
 
@@ -96,6 +98,7 @@ guestSchema.index({ eventId: 1, categoryId: 1, rsvpStatus: 1 });
 guestSchema.index({ eventId: 1, attendanceStatus: 1, checkInTime: -1 });
 guestSchema.index({ eventId: 1, side: 1 });
 guestSchema.index({ eventId: 1, partyId: 1 });
+guestSchema.index({ eventId: 1, reservedTable: 1 });
 guestSchema.index({ categoryId: 1 });
 guestSchema.index({ fullName: 'text', email: 'text', phone: 'text' });
 guestSchema.index({ qrToken: 1 }, { unique: true, sparse: true });

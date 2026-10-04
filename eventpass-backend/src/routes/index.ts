@@ -10,11 +10,13 @@ import publicFamilyRoutes from './publicFamily.routes';
 import checkinRoutes, { nestedCheckinRoutes } from './checkin.routes';
 import dashboardRoutes from './dashboard.routes';
 import reportRoutes from './report.routes';
+import userRoutes from './user.routes';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/events', eventRoutes);
+router.use('/users', userRoutes);
 
 // Event-scoped resources
 router.use('/events/:eventId/categories', nestedCategoryRoutes);

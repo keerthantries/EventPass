@@ -67,7 +67,7 @@ export const createGuest = asyncHandler(async (req: Request, res: Response) => {
   const event = await getOwnedEvent(req.params.eventId, req);
   const {
     fullName, firstName, lastName, email, phone, category, notes,
-    partyId, side, isVip, isImmediateFamily,
+    partyId, side, reservedTable, isVip, isImmediateFamily,
   } = req.body;
 
   if (category) {
@@ -96,6 +96,7 @@ export const createGuest = asyncHandler(async (req: Request, res: Response) => {
     phone,
     notes,
     side,
+    reservedTable: reservedTable?.trim() || null,
     isVip: isVip ?? false,
     isImmediateFamily: isImmediateFamily ?? false,
     invitationToken: generateInvitationToken(),
@@ -202,9 +203,11 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
 
   const [config, existingGuests] = await Promise.all([
     EventConfig.findOne({ eventId: event._id }),
-    Guest.find({ eventId: event._id }).select('fullName').lean(),
+    Guest.find({ eventId: event._id }).select('fullName reservedTable').lean(),
   ]);
-  const existingNames = new Set(existingGuests.map((g) => g.fullName.toLowerCase().trim()));
+  const existingByName = new Map(
+    existingGuests.map((g) => [g.fullName.toLowerCase().trim(), { id: g._id, reservedTable: g.reservedTable }])
+  );
 
   const categoryCache = new Map<string, string>();
   async function resolveCategory(name?: string): Promise<string | null> {
@@ -253,6 +256,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
   const generateQr = config?.qrGenerationTiming === 'on_add';
 
   let imported = 0;
+  let updated = 0;
   let skippedDuplicates = 0;
   const errors: { row: number; reason: string }[] = [];
 
@@ -268,8 +272,15 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     }
 
     const nameKey = computedFullName.toLowerCase().trim();
-    if (existingNames.has(nameKey)) {
-      skippedDuplicates += 1;
+    const existing = existingByName.get(nameKey);
+    if (existing) {
+      const nextTable = row.reservedTable?.trim();
+      if (nextTable && (existing.reservedTable ?? '').trim() !== nextTable) {
+        await Guest.updateOne({ _id: existing.id, eventId: event._id }, { $set: { reservedTable: nextTable } });
+        updated += 1;
+      } else {
+        skippedDuplicates += 1;
+      }
       continue;
     }
 
@@ -287,6 +298,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
       categoryId,
       partyId,
       side: row.side,
+      reservedTable: row.reservedTable?.trim() || null,
       isVip: row.isVip ?? false,
       isImmediateFamily: row.isImmediateFamily ?? false,
       invitationToken: generateInvitationToken(),
@@ -303,13 +315,13 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
       await generateQrImage(guest.qrToken);
     }
 
-    existingNames.add(nameKey);
+    existingByName.set(nameKey, { id: guest._id, reservedTable: guest.reservedTable ?? null });
     imported += 1;
   }
 
-  await writeAuditLog(req.user!.sub, 'guest.import', 'Event', event.id, { imported, skippedDuplicates, failed: errors.length });
+  await writeAuditLog(req.user!.sub, 'guest.import', 'Event', event.id, { imported, updated, skippedDuplicates, failed: errors.length });
 
-  return sendSuccess(res, { totalRows: rows.length, imported, skippedDuplicates, failed: errors.length, errors });
+  return sendSuccess(res, { totalRows: rows.length, imported, updated, skippedDuplicates, failed: errors.length, errors });
 });
 
 /** GET /events/:eventId/guests/export */
@@ -329,6 +341,7 @@ export const exportGuests = asyncHandler(async (req: Request, res: Response) => 
     category: g.categoryId?.name ?? '',
     party: g.partyId?.name ?? '',
     side: g.side ?? '',
+    reservedTable: g.reservedTable ?? '',
     vip: g.isVip ? 'Yes' : '',
     immediateFamily: g.isImmediateFamily ? 'Yes' : '',
     invitationStatus: g.invitationStatus,
@@ -395,6 +408,11 @@ export const updateGuest = asyncHandler(async (req: Request, res: Response) => {
     }
     guest.partyId = req.body.partyId || null;
     delete req.body.partyId;
+  }
+
+  if (req.body.reservedTable !== undefined) {
+    guest.reservedTable = typeof req.body.reservedTable === 'string' ? req.body.reservedTable.trim() || null : null;
+    delete req.body.reservedTable;
   }
 
   if (req.body.fullName === undefined && req.body.firstName !== undefined) {

@@ -21,7 +21,8 @@ router.post(
   validate(createSecurityStaffSchema),
   ctrl.createSecurityStaff
 );
-router.get('/security-staff', authenticate, requireRole('organizer'), ctrl.listSecurityStaff);
-router.delete('/security-staff/:id', authenticate, requireRole('organizer'), ctrl.deactivateSecurityStaff);
+router.get('/security-staff', authenticate, requireRole('organizer', 'super_admin'), ctrl.listSecurityStaff);
+router.get('/security-staff/overview', authenticate, requireRole('super_admin'), ctrl.listTeamOverview);
+router.delete('/security-staff/:id', authenticate, requireRole('organizer', 'super_admin'), ctrl.deactivateSecurityStaff);
 
 export default router;

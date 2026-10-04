@@ -9,6 +9,7 @@ export const createGuestSchema = z.object({
   category: z.string().optional(),
   partyId: z.string().optional(),
   side: z.string().max(50).optional(),
+  reservedTable: z.string().max(50).optional(),
   isVip: z.boolean().optional(),
   isImmediateFamily: z.boolean().optional(),
   notes: z.string().max(1000).optional(),

@@ -66,6 +66,7 @@ export const getInvitation = asyncHandler(async (req: Request, res: Response) =>
       qrToken: guest.qrToken,
       partyName: partyData?.name ?? null,
       side: guest.side ?? partyData?.side ?? null,
+      reservedTable: guest.reservedTable ?? null,
       invitationToken: guest.invitationToken,
     },
     config: { modules: config.modules, rsvpMode: config.rsvpMode },

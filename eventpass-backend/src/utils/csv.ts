@@ -13,6 +13,7 @@ export interface ParsedGuestRow {
   partyId?: string;
   partyName?: string;
   side?: string;
+  reservedTable?: string;
   isVip?: boolean;
   isImmediateFamily?: boolean;
   notes?: string;
@@ -39,6 +40,13 @@ const HEADER_MAP: Record<string, keyof Omit<ParsedGuestRow, 'row'>> = {
   bride: 'side',
   groom: 'side',
   side: 'side',
+  table: 'reservedTable',
+  'table no': 'reservedTable',
+  'table no.': 'reservedTable',
+  'table number': 'reservedTable',
+  'reserved table': 'reservedTable',
+  'reserved table number': 'reservedTable',
+  reservedtable: 'reservedTable',
   vip: 'isVip',
   'immediate family': 'isImmediateFamily',
   notes: 'notes',
