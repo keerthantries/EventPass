@@ -187,6 +187,7 @@ export default function GuestsPage() {
       {
         key: "contact",
         header: "Contact",
+        mobileSpan: 2,
         cell: (g) => {
           const email = canManage ? g.email : undefined;
           const phone = canManage ? g.phone : undefined;
@@ -234,6 +235,7 @@ export default function GuestsPage() {
       {
         key: "invitationOpenedAt",
         header: "Opened",
+        hideOnMobile: true,
         cell: (g) =>
           g.invitationOpenedAt ? (
             <span className="text-xs text-fg-secondary">{formatDateTime(g.invitationOpenedAt)}</span>
@@ -744,7 +746,6 @@ export default function GuestsPage() {
           const parts: string[] = [];
           if (g.partyName) parts.push(g.partyName);
           else if (g.side) parts.push(`${g.side}'s family`);
-          if (g.reservedTable) parts.push(`Table ${g.reservedTable}`);
           if (g.isVip) parts.push("VIP");
           if (g.isImmediateFamily) parts.push("Immediate Family");
           parts.push(inviteBadge(g.invitationStatus).label);

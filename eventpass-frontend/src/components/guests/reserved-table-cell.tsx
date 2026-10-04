@@ -43,7 +43,7 @@ export function ReservedTableCell({ eventId, guest, canManage = false }: Reserve
   }
 
   return (
-    <div className="relative flex w-28 items-center">
+    <div className="relative flex w-28 max-w-full items-center">
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -54,10 +54,10 @@ export function ReservedTableCell({ eventId, guest, canManage = false }: Reserve
             (e.target as HTMLInputElement).blur();
           }
         }}
-        placeholder="Assign…"
+        placeholder="—"
         aria-label={`Reserved table for ${guest.fullName}`}
         maxLength={50}
-        className="h-8 pr-7 text-xs"
+        className="h-8 w-full pr-7 text-xs"
       />
       <span className="pointer-events-none absolute right-2 flex items-center">
         {updateMutation.isPending ? (

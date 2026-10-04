@@ -28,6 +28,8 @@ export interface DataTableColumn<T> {
   cellClassName?: string;
   primary?: boolean;
   hideOnMobile?: boolean;
+  /** How many of the mobile card's 2 grid columns this cell occupies (default 1). */
+  mobileSpan?: 1 | 2;
 }
 
 export interface RowAction<T> {
@@ -284,9 +286,9 @@ export function DataTable<T>({
                   <div className="text-sm font-medium text-fg">{titleAccessor(row)}</div>
                 ) : null}
                 {subtitleAccessor ? <div className="text-xs text-fg-muted">{subtitleAccessor(row)}</div> : null}
-                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                <div className="grid grid-flow-row-dense grid-cols-2 gap-x-3 gap-y-1.5">
                   {visibleColumns.map((col) => (
-                    <div key={col.key} className="min-w-0">
+                    <div key={col.key} className={cn("min-w-0", col.mobileSpan === 2 && "col-span-2")}>
                       <div className="text-[10px] uppercase tracking-wide text-fg-muted">{col.header}</div>
                       <div className="truncate text-xs text-fg-secondary">{renderCell(row, col)}</div>
                     </div>
