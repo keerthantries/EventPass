@@ -53,7 +53,8 @@ export function smsHref(phone: string | null | undefined, body: string): string 
   return `sms:${num}${sep}body=${encodeURIComponent(body)}`;
 }
 
-export function initials(name: string): string {
+export function initials(name: string | null | undefined): string {
+  if (!name) return "";
   return name
     .split(/\s+/)
     .filter(Boolean)

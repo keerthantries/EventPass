@@ -15,6 +15,19 @@ export default function AppError({
     console.error(error);
   }, [error]);
 
+  // React forwards non-Error throws (e.g. strings from libraries) as-is,
+  // so `error.message` can be empty — fall back to the raw value.
+  const raw = error as unknown;
+  const detail =
+    typeof raw === "string"
+      ? raw
+      : raw instanceof Error
+        ? raw.message
+        : raw
+          ? JSON.stringify(raw)
+          : "";
+  const digest = (raw as { digest?: string })?.digest;
+
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-bg p-6 text-center">
       <span className="flex size-14 items-center justify-center rounded-full bg-danger/10">
@@ -26,7 +39,12 @@ export default function AppError({
           Something went wrong while loading this screen. Your check-in data is
           safe — try again.
         </p>
-        <p className="text-xs text-fg-muted">Error code: {error.digest ?? "UNKNOWN"}</p>
+        {detail ? (
+          <p className="mx-auto max-w-lg break-words rounded-md border border-border bg-surface px-3 py-2 font-mono text-xs text-fg-muted">
+            {detail}
+          </p>
+        ) : null}
+        <p className="text-xs text-fg-muted">Error code: {digest ?? "UNKNOWN"}</p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button onClick={() => unstable_retry()}>

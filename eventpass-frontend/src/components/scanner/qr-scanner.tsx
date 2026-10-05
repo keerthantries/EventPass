@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { Camera, ScanLine, Zap, ZapOff, Loader2 } from "lucide-react";
+import { Camera, ScanLine, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -27,12 +27,48 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
   const [torchOn, setTorchOn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const autoStarted = useRef(false);
+  const pausedRef = useRef(false);
+  const disabledRef = useRef(disabled);
+  const onScanRef = useRef(onScan);
   const containerId = "eventpass-qr-reader";
+
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+
+  useEffect(() => {
+    onScanRef.current = onScan;
+  }, [onScan]);
+
+  // html5-qrcode's pause()/resume() throw when called in the wrong state, and
+  // an exception inside an effect takes down the whole page (error boundary).
+  // Track the paused state ourselves and never call them out of order.
+  const safePause = () => {
+    const s = scannerRef.current;
+    if (!s?.isScanning || pausedRef.current) return;
+    try {
+      s.pause();
+      pausedRef.current = true;
+    } catch {
+      // already paused / not scanning
+    }
+  };
+
+  const safeResume = () => {
+    const s = scannerRef.current;
+    if (!s?.isScanning || !pausedRef.current) return;
+    try {
+      s.resume();
+      pausedRef.current = false;
+    } catch {
+      // already scanning
+    }
+  };
 
   // Pause frame processing while a check-in is in flight to avoid a double-scan.
   useEffect(() => {
-    if (disabled && scannerRef.current?.isScanning) scannerRef.current.pause();
-    if (!disabled && scannerRef.current?.isScanning) scannerRef.current.resume();
+    if (disabled) safePause();
+    else safeResume();
   }, [disabled]);
 
   const startScanner = async () => {
@@ -40,18 +76,19 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
     setError(null);
     const scanner = new Html5Qrcode(containerId);
     scannerRef.current = scanner;
+    pausedRef.current = false;
     try {
       await scanner.start(
         { facingMode: "environment" },
         CONFIG,
         (decodedText) => {
-          if (disabled) return;
+          if (disabledRef.current) return;
           setTorchOn(false);
-          onScan(decodedText.trim());
-          // give a moment before scanning the next frame
-          window.setTimeout(() => {
-            if (scannerRef.current?.isScanning) scannerRef.current.resume();
-          }, 900);
+          // No manual pause here: pausing is driven by the `disabled` effect
+          // when the console starts a check-in. Pausing unconditionally (even
+          // when the console dedupes the scan and never sets `busy`) left the
+          // camera frozen with nothing to resume it.
+          onScanRef.current(decodedText.trim());
         },
         () => {}
       );
@@ -70,7 +107,6 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
     if (autoStarted.current) return;
     autoStarted.current = true;
     void startScanner();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stopScanner = async () => {
@@ -83,6 +119,7 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
       }
     }
     scannerRef.current = null;
+    pausedRef.current = false;
     setScanning(false);
     setTorchOn(false);
   };

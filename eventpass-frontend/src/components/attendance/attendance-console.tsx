@@ -48,17 +48,20 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
   const resultRef = useRef<HTMLDivElement>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
   const resetTimer = useRef<number | undefined>(undefined);
+  const feedbackTokenRef = useRef<string | null>(null);
+  const lastScanRef = useRef<{ token: string; at: number } | null>(null);
 
   // Success feedback auto-clears so the scanner is immediately ready for the
   // next guest — staff never need to navigate back.
-  const setFeedbackSafe = (fb: ScanFeedback | null) => {
+  const setFeedbackSafe = (fb: ScanFeedback | null, token?: string) => {
     if (resetTimer.current !== undefined) {
       window.clearTimeout(resetTimer.current);
       resetTimer.current = undefined;
     }
     setFeedback(fb);
+    feedbackTokenRef.current = fb ? (token ?? feedbackTokenRef.current) : null;
     if (fb?.kind === "success") {
-      resetTimer.current = window.setTimeout(() => setFeedback(null), 3500);
+      resetTimer.current = window.setTimeout(() => setFeedbackSafe(null), 3500);
     }
   };
 
@@ -88,20 +91,20 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     window.setTimeout(() => setFlash(false), 1200);
   };
 
-  const runCheckin = async (action: () => Promise<CheckinResult>, duplicateHint: string) => {
+  const runCheckin = async (action: () => Promise<CheckinResult>, duplicateHint: string, token?: string) => {
     if (busy) return;
     setBusy(true);
     try {
       const result = await action();
-      setFeedbackSafe({ kind: "success", data: result });
+      setFeedbackSafe({ kind: "success", data: result }, token);
       flashSuccess();
     } catch (err) {
       const e = err as ApiClientError;
       if (e.status === 409) {
         const details = (e.details?.[0] ?? undefined) as DuplicateCheckinDetails | undefined;
-        setFeedbackSafe({ kind: "duplicate", message: duplicateHint, details });
+        setFeedbackSafe({ kind: "duplicate", message: duplicateHint, details }, token);
       } else {
-        setFeedbackSafe({ kind: "error", message: e.message });
+        setFeedbackSafe({ kind: "error", message: e.message }, token);
       }
     } finally {
       setBusy(false);
@@ -111,6 +114,13 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
   // Step 1: scan → look up guest only (no attendance change)
   const handleScan = async (token: string) => {
     if (busy) return;
+    // The camera keeps seeing a code after it decodes: while its card is on
+    // screen (or within a short cooldown), don't call the API again — the
+    // backend rate-limits lookups to 60/min per IP.
+    if (feedback && feedbackTokenRef.current === token) return;
+    const now = Date.now();
+    if (lastScanRef.current?.token === token && now - lastScanRef.current.at < 1500) return;
+    lastScanRef.current = { token, at: now };
     setBusy(true);
     try {
       const data = await lookupMutation.mutateAsync({ eventId, token });
@@ -119,13 +129,13 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
           kind: "duplicate",
           message: "This guest is already checked in. No duplicate entry was created.",
           details: lookupToDetails(data),
-        });
+        }, token);
       } else {
-        setFeedbackSafe({ kind: "ready", token, data });
+        setFeedbackSafe({ kind: "ready", token, data }, token);
       }
     } catch (err) {
       const e = err as ApiClientError;
-      setFeedbackSafe({ kind: "error", message: e.message });
+      setFeedbackSafe({ kind: "error", message: e.message }, token);
     } finally {
       setBusy(false);
     }
@@ -135,7 +145,8 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
   const handleConfirm = async (token: string) => {
     await runCheckin(
       () => scanMutation.mutateAsync({ eventId, token }),
-      "This guest is already checked in. No duplicate entry was created."
+      "This guest is already checked in. No duplicate entry was created.",
+      token
     );
   };
 
