@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
-import { allowedNav, globalNav, type NavItem } from "@/lib/nav";
+import { navForRole, type NavItem } from "@/lib/nav";
 import type { UserRole } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const items = allowedNav(globalNav, user?.role as UserRole | undefined);
+  const items = navForRole(user?.role as UserRole | undefined);
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface md:flex">

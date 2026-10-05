@@ -26,6 +26,7 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
   const [error, setError] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const autoStarted = useRef(false);
   const containerId = "eventpass-qr-reader";
 
   // Pause frame processing while a check-in is in flight to avoid a double-scan.
@@ -62,6 +63,15 @@ export function QrScanner({ onScan, disabled = false }: QrScannerProps) {
       setStarting(false);
     }
   };
+
+  // Open the camera as soon as the console loads so staff can scan immediately.
+  // If permission is denied or the camera fails, the error overlay offers a retry.
+  useEffect(() => {
+    if (autoStarted.current) return;
+    autoStarted.current = true;
+    void startScanner();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stopScanner = async () => {
     if (scannerRef.current?.isScanning) {

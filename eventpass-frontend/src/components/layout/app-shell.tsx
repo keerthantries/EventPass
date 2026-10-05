@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { allowedNav, globalNav } from "@/lib/nav";
+import { navForRole } from "@/lib/nav";
 import type { UserRole } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -22,7 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-  const items = allowedNav(globalNav, user?.role as UserRole | undefined);
+  const items = navForRole(user?.role as UserRole | undefined);
 
   return (
     <div className="flex min-h-dvh">

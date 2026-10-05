@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { allowedNav, globalNav } from "@/lib/nav";
+import { navForRole } from "@/lib/nav";
 import type { UserRole } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
 export function MobileNav() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const items = allowedNav(globalNav, user?.role as UserRole | undefined);
+  const items = navForRole(user?.role as UserRole | undefined);
 
   return (
     <nav

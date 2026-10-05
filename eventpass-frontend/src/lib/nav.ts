@@ -52,3 +52,16 @@ export function allowedNav<T extends { roles: UserRole[] }>(items: T[], role?: U
   if (!role) return [];
   return items.filter((i) => i.roles.includes(role));
 }
+
+// Security staff exist only to scan: their nav goes straight to Attendance.
+export const securityNav: NavItem[] = [
+  { href: "/attendance", label: "Attendance", icon: ScanLine, roles: ["security"] },
+  { href: "/events", label: "Events", icon: CalendarDays, roles: ["security"] },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["security"] },
+];
+
+export function navForRole(role?: UserRole): NavItem[] {
+  if (!role) return [];
+  if (role === "security") return securityNav;
+  return allowedNav(globalNav, role);
+}

@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { ApiClientError } from "@/lib/api";
+import { listEvents } from "@/lib/queries/events";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +50,17 @@ export default function LoginPage() {
         title: `Welcome back, ${user.name.split(" ")[0]}!`,
         variant: "success",
       });
-      router.push("/overview");
+      if (user.role === "security") {
+        // Team members exist to scan: go straight to their event's check-in console.
+        try {
+          const { items } = await listEvents({ limit: "100" });
+          router.push(items.length === 1 ? `/events/${items[0].id}/attendance` : "/events");
+        } catch {
+          router.push("/events");
+        }
+      } else {
+        router.push("/overview");
+      }
     } catch (err) {
       toast({
         title: "Sign in failed",

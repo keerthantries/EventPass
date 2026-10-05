@@ -46,13 +46,40 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
   const [flash, setFlash] = useState(false);
   const [busy, setBusy] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
+  const resetTimer = useRef<number | undefined>(undefined);
+
+  // Success feedback auto-clears so the scanner is immediately ready for the
+  // next guest — staff never need to navigate back.
+  const setFeedbackSafe = (fb: ScanFeedback | null) => {
+    if (resetTimer.current !== undefined) {
+      window.clearTimeout(resetTimer.current);
+      resetTimer.current = undefined;
+    }
+    setFeedback(fb);
+    if (fb?.kind === "success") {
+      resetTimer.current = window.setTimeout(() => setFeedback(null), 3500);
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current !== undefined) window.clearTimeout(resetTimer.current);
+    },
+    []
+  );
 
   // Keep the result card (and its confirm button) in view on phones, where the
-  // square scanner pushes it below the fold.
+  // square scanner pushes it below the fold. After a successful check-in, scroll
+  // back up to the scanner instead so the next scan can start right away.
   useEffect(() => {
     if (!feedback) return;
     if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (feedback.kind === "success") {
+        scannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
   }, [feedback]);
 
@@ -66,15 +93,15 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     setBusy(true);
     try {
       const result = await action();
-      setFeedback({ kind: "success", data: result });
+      setFeedbackSafe({ kind: "success", data: result });
       flashSuccess();
     } catch (err) {
       const e = err as ApiClientError;
       if (e.status === 409) {
         const details = (e.details?.[0] ?? undefined) as DuplicateCheckinDetails | undefined;
-        setFeedback({ kind: "duplicate", message: duplicateHint, details });
+        setFeedbackSafe({ kind: "duplicate", message: duplicateHint, details });
       } else {
-        setFeedback({ kind: "error", message: e.message });
+        setFeedbackSafe({ kind: "error", message: e.message });
       }
     } finally {
       setBusy(false);
@@ -88,17 +115,17 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     try {
       const data = await lookupMutation.mutateAsync({ eventId, token });
       if (data.attendanceStatus === "present") {
-        setFeedback({
+        setFeedbackSafe({
           kind: "duplicate",
           message: "This guest is already checked in. No duplicate entry was created.",
           details: lookupToDetails(data),
         });
       } else {
-        setFeedback({ kind: "ready", token, data });
+        setFeedbackSafe({ kind: "ready", token, data });
       }
     } catch (err) {
       const e = err as ApiClientError;
-      setFeedback({ kind: "error", message: e.message });
+      setFeedbackSafe({ kind: "error", message: e.message });
     } finally {
       setBusy(false);
     }
@@ -124,7 +151,7 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     setBusy(true);
     try {
       const result = await undoMutation.mutateAsync(guestId);
-      setFeedback(null);
+      setFeedbackSafe(null);
       toast({ title: "Check-in undone", description: `${result.fullName} is marked as not arrived.`, variant: "success" });
     } catch (err) {
       toast({ title: "Could not undo check-in", description: (err as Error).message, variant: "error" });
@@ -138,7 +165,7 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
     setBusy(true);
     try {
       const result = await reentryMutation.mutateAsync(guestId);
-      setFeedback({ kind: "success", data: { guest: result.guest, attendanceStatus: result.attendanceStatus, checkInTime: result.checkInTime } });
+      setFeedbackSafe({ kind: "success", data: { guest: result.guest, attendanceStatus: result.attendanceStatus, checkInTime: result.checkInTime } });
       toast({ title: "Re-entry allowed", description: `${result.guest.fullName} may re-enter.`, variant: "success" });
     } catch (err) {
       toast({ title: "Could not allow re-entry", description: (err as Error).message, variant: "error" });
@@ -150,18 +177,20 @@ export function AttendanceConsole({ eventId }: { eventId: string }) {
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
-        <Card className={flash ? "border-success/60 shadow-[0_0_24px_-6px_rgba(47,184,94,0.45)]" : ""}>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <ScanLine className="size-4 text-primary" />
-              Scanner
-            </CardTitle>
-            <CardDescription>Scan a QR code, review the guest, then confirm check-in</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <QrScanner onScan={handleScan} disabled={busy} />
-          </CardContent>
-        </Card>
+        <div ref={scannerRef}>
+          <Card className={flash ? "border-success/60 shadow-[0_0_24px_-6px_rgba(47,184,94,0.45)]" : ""}>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <ScanLine className="size-4 text-primary" />
+                Scanner
+              </CardTitle>
+              <CardDescription>Scan a QR code, review the guest, then confirm check-in</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <QrScanner onScan={handleScan} disabled={busy} />
+            </CardContent>
+          </Card>
+        </div>
 
         <div ref={resultRef}>
           <ScanResult
