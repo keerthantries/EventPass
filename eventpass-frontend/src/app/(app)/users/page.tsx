@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUsers } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth } from "@/lib/auth";
 import type { AdminUser, UserRole } from "@/lib/types";
 import { DataTable, type DataTableColumn } from "@/components/ui/datatable";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,8 @@ const roleLabel: Record<UserRole, string> = {
 };
 
 export default function UsersPage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "super_admin";
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
@@ -39,7 +42,7 @@ export default function UsersPage() {
   if (role !== "all") params.role = role;
   if (debouncedSearch) params.q = debouncedSearch;
 
-  const { data, isLoading, isError, error, refetch } = useUsers(params);
+  const { data, isLoading, isError, error, refetch } = useUsers(params, isSuperAdmin);
 
   const columns: DataTableColumn<AdminUser>[] = [
     {

@@ -7,6 +7,19 @@ import type { User } from "@/lib/types";
 
 const TOKEN_KEY = "eventpass.token";
 
+function setAuthCookies(role?: User["role"]) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; secure" : "";
+  if (role) {
+    const attrs = `path=/; max-age=${30 * 24 * 60 * 60}; samesite=lax${secure}`;
+    document.cookie = `ep_session=1; ${attrs}`;
+    document.cookie = `ep_role=${role}; ${attrs}`;
+  } else {
+    document.cookie = "ep_session=; path=/; max-age=0";
+    document.cookie = "ep_role=; path=/; max-age=0";
+  }
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -35,10 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       try {
         const { data } = await apiRequest<{ id: string; name: string; email: string; role: User["role"] }>("/auth/me");
-        if (!cancelled) setUser({ id: data.id, name: data.name, email: data.email, role: data.role });
+        if (!cancelled) {
+          setUser({ id: data.id, name: data.name, email: data.email, role: data.role });
+          setAuthCookies(data.role);
+        }
       } catch {
         tokenStore.set(null);
         window.localStorage.removeItem(TOKEN_KEY);
+        setAuthCookies();
         if (!cancelled) setUser(null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -64,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       persist(data.token);
       setUser(data.user);
+      setAuthCookies(data.user.role);
       return data.user;
     },
     [persist]
@@ -88,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     tokenStore.set(null);
     window.localStorage.removeItem(TOKEN_KEY);
+    setAuthCookies();
     setUser(null);
     router.push("/login");
   }, [router]);

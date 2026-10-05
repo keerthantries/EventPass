@@ -25,11 +25,12 @@ export default function FormsPage() {
   const { user } = useAuth();
   const canManage = user?.role === "organizer" || user?.role === "super_admin";
 
-  const { data, isLoading, isError, error, refetch } = useFormSchema(eventId);
+  const { data, isLoading, isError, error, refetch } = useFormSchema(eventId, canManage);
   const { data: event } = useEvent(eventId);
 
   const dynamicFormEnabled = event?.config?.modules.dynamicForm ?? true;
 
+  if (!canManage) return <RequireRole roles={["organizer", "super_admin"]}><></></RequireRole>;
   if (isLoading) return <PageSkeleton />;
   if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
   if (!data) return <PageSkeleton />;

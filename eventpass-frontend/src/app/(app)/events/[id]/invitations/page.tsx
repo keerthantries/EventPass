@@ -19,7 +19,9 @@ import {
 import { useGuests, useEvent, useBulkGuestAction, useMarkGuestSent } from "@/hooks/queries";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/lib/auth";
+import { downloadFile, ApiClientError } from "@/lib/api";
 import { PageHeader } from "@/components/ui/page-header";
+import { RequireRole } from "@/components/ui/require-role";
 import { PageSkeleton, PageError } from "@/components/ui/page-state";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -96,17 +98,25 @@ export default function InvitationsPage() {
     }
   };
 
+  const handleExport = () => {
+    downloadFile(`/events/${eventId}/guests/export?format=csv`, `invitations-${eventId}.csv`).catch((e) =>
+      toast({ title: "Export failed", description: e instanceof ApiClientError ? e.message : "Try again", variant: "error" })
+    );
+  };
+
+  if (!canManage) return <RequireRole roles={["organizer", "super_admin"]}><></></RequireRole>;
   if (isLoading) return <PageSkeleton />;
   if (isError) return <PageError message={(error as Error)?.message} onRetry={() => refetch()} />;
 
   return (
+    <RequireRole roles={["organizer", "super_admin"]}>
     <div>
       <PageHeader
         title="Invitations"
         description="Manage and share wedding invitations with your guests."
         actions={
           canManage ? (
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" onClick={handleExport}>
               <Download className="size-4" />
               Export
             </Button>
@@ -243,6 +253,7 @@ export default function InvitationsPage() {
         onMarkSent={(id, channel) => markSentMutation.mutateAsync({ id, channel })}
       />
     </div>
+    </RequireRole>
   );
 }
 

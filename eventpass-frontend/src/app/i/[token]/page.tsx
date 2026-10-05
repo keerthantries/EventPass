@@ -2,7 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, Gift } from "lucide-react";
 import QRCode from "qrcode";
 import { useInvitation } from "@/hooks/queries";
 import { cn } from "@/lib/utils";
@@ -131,6 +131,7 @@ export default function InvitePage({
 
   const { event: eventData, guest } = data;
   const websiteUrl = eventData.weddingWebsiteUrl || "https://withjoy.com/ikramhalane-and-nebilyusuf";
+  const registryUrl = "https://withjoy.com/ikramhalane-and-nebilyusuf/registry";
   const { dayName, month, dayNumber, year } = formatDateParts(eventData.startDate);
 
   const brideName = eventData.brideName || "Ikram Halane";
@@ -515,11 +516,16 @@ export default function InvitePage({
           )}
 
           {websiteUrl && (
-            <Link href={websiteUrl} target="_blank" className="website-btn animate-fade-in delay-7">
+            <Link href={websiteUrl} target="_blank" rel="noopener" className="website-btn animate-fade-in delay-7">
               <ExternalLink className="website-btn-icon" style={{ color: "#c59b27" }} />
               <span className="gold-text">VIEW WEDDING WEBSITE</span>
             </Link>
           )}
+
+          <Link href={registryUrl} target="_blank" rel="noopener" className="website-btn animate-fade-in delay-7">
+            <Gift className="website-btn-icon" style={{ color: "#c59b27" }} />
+            <span className="gold-text">VISIT REGISTRY</span>
+          </Link>
 
           <div className="footer-text animate-fade-in delay-7">Powered by EventPass</div>
         </div>

@@ -280,17 +280,19 @@ export function useMarkGuestSent(eventId: string) {
   });
 }
 
-export function useParties(eventId: string) {
+export function useParties(eventId: string, enabled = true) {
   return useQuery({
     queryKey: qk.parties(eventId),
     queryFn: () => listParties(eventId),
+    enabled,
   });
 }
 
-export function useFormSchema(eventId: string) {
+export function useFormSchema(eventId: string, enabled = true) {
   return useQuery({
     queryKey: qk.form(eventId),
     queryFn: () => getFormSchema(eventId),
+    enabled,
   });
 }
 
@@ -384,11 +386,12 @@ export function useRecentCheckins(eventId: string, refetchInterval = 15000) {
   });
 }
 
-export function useDashboard(eventId: string) {
+export function useDashboard(eventId: string, enabled = true) {
   return useQuery({
     queryKey: qk.dashboard(eventId),
     queryFn: () => getDashboard(eventId),
     refetchInterval: 15000,
+    enabled,
   });
 }
 
@@ -429,25 +432,28 @@ export function useSubmitForm(token: string) {
   });
 }
 
-export function useTeam() {
+export function useTeam(enabled = true) {
   return useQuery({
     queryKey: qk.team(),
     queryFn: () => listSecurityStaff(),
+    enabled,
   });
 }
 
-export function useTeamOverview() {
+export function useTeamOverview(enabled = true) {
   return useQuery({
     queryKey: qk.teamOverview(),
     queryFn: () => listTeamOverview(),
+    enabled,
   });
 }
 
-export function useUsers(params?: Record<string, string>) {
+export function useUsers(params?: Record<string, string>, enabled = true) {
   const p = params ?? {};
   return useQuery({
     queryKey: qk.users(p),
     queryFn: () => listUsers(p),
+    enabled,
   });
 }
 

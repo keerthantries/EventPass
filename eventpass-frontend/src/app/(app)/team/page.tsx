@@ -89,8 +89,9 @@ function StaffRow({
 export default function TeamPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "super_admin";
-  const teamQuery = useTeam();
-  const overviewQuery = useTeamOverview();
+  const canUseTeam = user?.role === "organizer" || user?.role === "super_admin";
+  const teamQuery = useTeam(canUseTeam);
+  const overviewQuery = useTeamOverview(isAdmin);
   const createMutation = useCreateSecurityStaff();
   const deactivateMutation = useDeactivateSecurityStaff();
   const { toast } = useToast();
@@ -139,6 +140,7 @@ const onSubmit = async (values: FormValues) => {
     }
   };
 
+  if (!canUseTeam) return <RequireRole roles={["organizer", "super_admin"]}><></></RequireRole>;
   if (isLoading) return <PageSkeleton />;
   if (isError)
     return (

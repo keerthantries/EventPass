@@ -67,7 +67,7 @@ export default function EventOverviewPage() {
     isError: dashError,
     error: dashErrorObj,
     refetch: dashRefetch,
-  } = useDashboard(params.id);
+  } = useDashboard(params.id, isAdmin);
 
   const handlePublish = async () => {
     try {

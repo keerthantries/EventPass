@@ -114,7 +114,7 @@ export default function GuestsPage() {
   const { data, isLoading, isError, error, refetch } = useGuests(eventId, paramsObj);
   const { data: categories } = useCategories(eventId);
   const { data: event } = useEvent(eventId);
-  const { data: parties } = useParties(eventId);
+  const { data: parties } = useParties(eventId, canManage);
 
   const deleteMutation = useDeleteGuest(eventId);
   const bulkMutation = useBulkGuestAction(eventId);
@@ -184,30 +184,34 @@ export default function GuestsPage() {
           <ReservedTableCell key={`${g._id}:${g.reservedTable ?? ""}`} eventId={eventId} guest={g} canManage={canManage} />
         ),
       },
-      {
-        key: "contact",
-        header: "Contact",
-        mobileSpan: 2,
-        cell: (g) => {
-          const email = canManage ? g.email : undefined;
-          const phone = canManage ? g.phone : undefined;
-          if (!email && !phone) return <span className="text-fg-muted">N/A</span>;
-          return (
-            <div className="min-w-0 text-xs text-fg-secondary">
-              {email ? (
-                <a href={`mailto:${email}`} className="block truncate hover:text-primary hover:underline">
-                  {email}
-                </a>
-              ) : null}
-              {phone ? (
-                <a href={`tel:${phone}`} className="block truncate hover:text-primary hover:underline">
-                  {phone}
-                </a>
-              ) : null}
-            </div>
-          );
-        },
-      },
+      ...(canManage
+        ? [
+            {
+              key: "contact",
+              header: "Contact",
+              mobileSpan: 2 as const,
+              cell: (g: Guest) => {
+                const email = g.email;
+                const phone = g.phone;
+                if (!email && !phone) return <span className="text-fg-muted">N/A</span>;
+                return (
+                  <div className="min-w-0 text-xs text-fg-secondary">
+                    {email ? (
+                      <a href={`mailto:${email}`} className="block truncate hover:text-primary hover:underline">
+                        {email}
+                      </a>
+                    ) : null}
+                    {phone ? (
+                      <a href={`tel:${phone}`} className="block truncate hover:text-primary hover:underline">
+                        {phone}
+                      </a>
+                    ) : null}
+                  </div>
+                );
+              },
+            },
+          ]
+        : []),
       {
         key: "side",
         header: "Side",
@@ -290,27 +294,31 @@ export default function GuestsPage() {
             },
           ]
         : []),
-      {
-        key: "qr",
-        header: "QR",
-        hideOnMobile: true,
-        className: "w-14 text-center",
-        headerClassName: "text-center",
-        cell: (g) => (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              g.qrToken ? setQrGuest(g) : handleGenerateQr(g);
-            }}
-            title={g.qrToken ? "View QR code" : "Generate QR code"}
-            aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
-            className="inline-flex size-9 items-center justify-center rounded-md border border-transparent transition-colors hover:border-primary/40 hover:bg-primary/10"
-          >
-            {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4 text-fg-muted" />}
-          </button>
-        ),
-      },
+      ...(canManage
+        ? [
+            {
+              key: "qr",
+              header: "QR",
+              hideOnMobile: true,
+              className: "w-14 text-center",
+              headerClassName: "text-center",
+              cell: (g: Guest) => (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    g.qrToken ? setQrGuest(g) : handleGenerateQr(g);
+                  }}
+                  title={g.qrToken ? "View QR code" : "Generate QR code"}
+                  aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
+                  className="inline-flex size-9 items-center justify-center rounded-md border border-transparent transition-colors hover:border-primary/40 hover:bg-primary/10"
+                >
+                  {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4 text-fg-muted" />}
+                </button>
+              ),
+            },
+          ]
+        : []),
     ];
     return cols;
   }, [canManage, categories, categoryMap, event, eventId]);
@@ -766,15 +774,17 @@ export default function GuestsPage() {
                 <Share2 className="size-4 text-primary" />
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={() => (g.qrToken ? setQrGuest(g) : handleGenerateQr(g))}
-              title={g.qrToken ? "View QR code" : "Generate QR code"}
-              aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
-              className="inline-flex size-9 items-center justify-center rounded-md border border-border-strong text-fg-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-            >
-              {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4" />}
-            </button>
+            {canManage ? (
+              <button
+                type="button"
+                onClick={() => (g.qrToken ? setQrGuest(g) : handleGenerateQr(g))}
+                title={g.qrToken ? "View QR code" : "Generate QR code"}
+                aria-label={g.qrToken ? "View QR code" : "Generate QR code"}
+                className="inline-flex size-9 items-center justify-center rounded-md border border-border-strong text-fg-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+              >
+                {g.qrToken ? <QrCode className="size-4 text-primary" /> : <QrCode className="size-4" />}
+              </button>
+            ) : null}
           </>
         )}
         rowActions={
