@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Share2, Copy, Check, MessageCircle, Mail, Send } from "lucide-react";
 import { Modal, ModalContent, ModalBody } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { EventTimeEditor } from "@/components/events/event-time-editor";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
 import type { Guest, EventDetail, InvitationChannel } from "@/lib/types";
 
 interface InvitationShareModalProps {
@@ -311,6 +311,7 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
                     <div className="modal-date-line" />
                   </div>
                 </div>
+                <EventTimeEditor eventId={event?.id} value={event?.startTime} variant="gold" />
                 {guestArrivalTime && (
                   <div className="modal-guest-arrival">GUEST ARRIVAL {guestArrivalTime}</div>
                 )}

@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { EventTimeEditor } from "@/components/events/event-time-editor";
 import { cn, formatDate, formatClock, initials, smsHref } from "@/lib/utils";
 import type { Guest, EventDetail } from "@/lib/types";
 
@@ -452,6 +453,9 @@ function InvitationShareInline({
               {event?.startDate && (
                 <p className="mt-1 text-xs text-white/50">{formatDate(event.startDate)}</p>
               )}
+              <div className="mt-1.5">
+                <EventTimeEditor eventId={event?.id} value={event?.startTime} variant="dark" />
+              </div>
             </div>
           </div>
 
