@@ -138,7 +138,7 @@ export default function InvitePage({
   const groomName = eventData.groomName || "Nebil Yusuf";
   const venue = eventData.venue || "Woodbine Banquet Hall";
   const venueAddress = eventData.venueAddress || "30 Vice Regent Blvd, Etobicoke, ON M9W 7A4";
-  const guestArrivalTime = eventData.guestArrivalTime || "6:00PM";
+  const guestArrivalTime = eventData.guestArrivalTime || "";
   const dressCode = eventData.dressCode || "Traditional Clothing / Black Tie";
   const startTimeLabel = formatClock(eventData.startTime);
   const quranVerse = eventData.quranVerse || "\"AND WE CREATED YOU IN PAIRS.\"";

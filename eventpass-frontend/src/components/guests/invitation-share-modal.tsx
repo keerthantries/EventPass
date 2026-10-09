@@ -64,7 +64,6 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
   const groomName = event?.groomName || "Nebil Yusuf";
   const venue = event?.venue || "Woodbine Banquet Hall";
   const venueAddress = event?.venueAddress || "30 Vice Regent Blvd, Etobicoke, ON M9W 7A4";
-  const guestArrivalTime = event?.guestArrivalTime || "6:00PM";
   const dressCode = event?.dressCode || "Traditional Clothing / Black Tie";
   const quranVerse = event?.quranVerse || "\"AND WE CREATED YOU IN PAIRS.\"";
   const quranReference = event?.quranReference || "QURAN 78:8";
@@ -311,10 +310,19 @@ export function InvitationShareModal({ guest, event, open, onOpenChange, onMarkS
                     <div className="modal-date-line" />
                   </div>
                 </div>
-                <EventTimeEditor eventId={event?.id} value={event?.startTime} variant="gold" />
-                {guestArrivalTime && (
-                  <div className="modal-guest-arrival">GUEST ARRIVAL {guestArrivalTime}</div>
-                )}
+                <EventTimeEditor
+                  field="startTime"
+                  eventId={event?.id}
+                  value={event?.startTime}
+                  variant="gold"
+                />
+                <EventTimeEditor
+                  field="guestArrivalTime"
+                  prefix="GUEST ARRIVAL "
+                  eventId={event?.id}
+                  value={event?.guestArrivalTime}
+                  variant="gold"
+                />
               </div>
 
               {/* Venue Section */}
