@@ -220,7 +220,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     EventConfig.findOne({ eventId: event._id }),
     Guest.find({ eventId: event._id }).select('fullName reservedTable').lean(),
   ]);
-  const existingByName = new Map(
+  const existingByName = new Map<string, { id: any; reservedTable: string | null | undefined; inFile?: boolean }>(
     existingGuests.map((g) => [g.fullName.toLowerCase().trim(), { id: g._id, reservedTable: g.reservedTable }])
   );
 
@@ -274,6 +274,8 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
   let updated = 0;
   let skippedDuplicates = 0;
   const errors: { row: number; reason: string }[] = [];
+  const skippedDetails: { row: number; fullName: string; reason: string }[] = [];
+  const updatedDetails: { row: number; fullName: string; table: string }[] = [];
 
   for (const row of rows) {
     try {
@@ -298,13 +300,24 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
       const nameKey = computedFullName.toLowerCase().trim();
       const existing = existingByName.get(nameKey);
       if (existing) {
+        // First row in this import that matches this name wins; later rows with
+        // the same name are in-file duplicates, even if they carry a new table.
+        if (existing.inFile) {
+          skippedDuplicates += 1;
+          skippedDetails.push({ row: row.row, fullName: computedFullName, reason: 'same name appears earlier in this file' });
+          continue;
+        }
         const nextTable = row.reservedTable?.trim();
         if (nextTable && (existing.reservedTable ?? '').trim() !== nextTable) {
           await Guest.updateOne({ _id: existing.id, eventId: event._id }, { $set: { reservedTable: nextTable } });
+          existing.reservedTable = nextTable;
           updated += 1;
+          updatedDetails.push({ row: row.row, fullName: computedFullName, table: nextTable });
         } else {
           skippedDuplicates += 1;
+          skippedDetails.push({ row: row.row, fullName: computedFullName, reason: 'already on the guest list' });
         }
+        existing.inFile = true;
         continue;
       }
 
@@ -339,7 +352,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
         await generateQrImage(guest.qrToken);
       }
 
-      existingByName.set(nameKey, { id: guest._id, reservedTable: guest.reservedTable ?? null });
+      existingByName.set(nameKey, { id: guest._id, reservedTable: guest.reservedTable ?? null, inFile: true });
       imported += 1;
     } catch (err) {
       // Contain row-level failures (duplicate key, validation, party/category
@@ -359,7 +372,16 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
 
   await writeAuditLog(req.user!.sub, 'guest.import', 'Event', event.id, { imported, updated, skippedDuplicates, failed: errors.length });
 
-  return sendSuccess(res, { totalRows: rows.length, imported, updated, skippedDuplicates, failed: errors.length, errors });
+  return sendSuccess(res, {
+    totalRows: rows.length,
+    imported,
+    updated,
+    skippedDuplicates,
+    failed: errors.length,
+    errors,
+    skipped: skippedDetails,
+    updatedRows: updatedDetails,
+  });
 });
 
 /** GET /events/:eventId/guests/export */

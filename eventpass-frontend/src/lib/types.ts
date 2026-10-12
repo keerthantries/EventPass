@@ -270,6 +270,8 @@ export interface ImportResult {
   skippedDuplicates: number;
   failed: number;
   errors: { row: number; reason: string }[];
+  skipped?: { row: number; fullName: string; reason: string }[];
+  updatedRows?: { row: number; fullName: string; table: string }[];
 }
 
 export interface SecurityStaff {
