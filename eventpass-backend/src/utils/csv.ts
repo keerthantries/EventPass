@@ -1,6 +1,7 @@
 import { parse } from 'fast-csv';
 import { Readable } from 'stream';
 import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
 
 export interface ParsedGuestRow {
   row: number;
@@ -183,9 +184,11 @@ export async function parseGuestXlsx(buffer: Buffer): Promise<ParsedGuestRow[]> 
 
 /** Thrown when the file's real format can't be handled; message is shown to the user. */
 export class GuestFileFormatError extends Error {
-  constructor(message: string) {
+  readonly details: string[];
+  constructor(message: string, details: string[] = []) {
     super(message);
     this.name = 'GuestFileFormatError';
+    this.details = details;
   }
 }
 
@@ -196,13 +199,71 @@ function startsWith(buffer: Buffer, bytes: number[]): boolean {
   return buffer.length >= bytes.length && bytes.every((b, i) => buffer[i] === b);
 }
 
-/** Dispatches to the right parser based on file extension / MAGIC bytes. */
+const errMessage = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 200);
+
+/**
+ * SheetJS parser — handles .xls (BIFF), .xlsb, and .xlsx workbooks that
+ * ExcelJS rejects. Returns the same normalized rows as parseGuestXlsx.
+ */
+export function parseGuestExcelSheetjs(buffer: Buffer): ParsedGuestRow[] {
+  const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: true });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) return [];
+
+  const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: '' });
+  if (matrix.length === 0) return [];
+
+  const seenHeaders = new Set<string>();
+  const headers: string[] = (matrix[0] ?? []).map((h) => {
+    let name = String(h ?? '').trim().toLowerCase();
+    if (seenHeaders.has(name)) {
+      let i = 2;
+      while (seenHeaders.has(`${name}_${i}`)) i += 1;
+      name = `${name}_${i}`;
+    }
+    seenHeaders.add(name);
+    return name;
+  });
+
+  const rows: ParsedGuestRow[] = [];
+  for (let r = 1; r < matrix.length; r += 1) {
+    const cells = matrix[r] ?? [];
+    if (cells.every((c) => String(c ?? '').trim() === '')) continue;
+    const raw: Record<string, string> = {};
+    headers.forEach((header, i) => {
+      if (!header) return;
+      const value = cells[i];
+      raw[header] = value instanceof Date ? value.toISOString().slice(0, 10) : String(value ?? '');
+    });
+    rows.push(mapRow(raw, r));
+  }
+  return rows;
+}
+
+/**
+ * Excel (.xlsx / .xls / .xlsb) dispatch. .xlsx goes through ExcelJS first
+ * (better type fidelity); if ExcelJS throws, SheetJS gets a second attempt
+ * before we give up. Legacy/binary formats go straight to SheetJS.
+ */
 export async function parseGuestFile(buffer: Buffer, filename = ''): Promise<ParsedGuestRow[]> {
   const lower = filename.toLowerCase();
-  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
-    if (startsWith(buffer, OLE2_MAGIC)) {
+
+  if (lower.endsWith('.xls') || lower.endsWith('.xlsb')) {
+    try {
+      return parseGuestExcelSheetjs(buffer);
+    } catch (err) {
       throw new GuestFileFormatError(
-        "This looks like an old Excel 97-2003 (.xls) file, which isn't supported. Open it in Excel or Google Sheets and re-save as 'Excel Workbook (.xlsx)' or CSV, then import again.",
+        "We couldn't read this Excel file. Re-save it from Excel or Google Sheets as .xlsx or CSV and try again.",
+        [errMessage(err)],
+      );
+    }
+  }
+
+  if (lower.endsWith('.xlsx')) {
+    if (startsWith(buffer, OLE2_MAGIC)) {
+      // legacy .xls compound documents AND password-protected .xlsx both start this way
+      throw new GuestFileFormatError(
+        "This looks like an old Excel 97-2003 (.xls) file or a password-protected workbook. Open it in Excel or Google Sheets and re-save (without a password) as 'Excel Workbook (.xlsx)' or CSV, then import again.",
       );
     }
     if (!startsWith(buffer, ZIP_MAGIC)) {
@@ -210,7 +271,19 @@ export async function parseGuestFile(buffer: Buffer, filename = ''): Promise<Par
         'This .xlsx file appears to be corrupt or was renamed from another format. Re-save it from Excel or Google Sheets as .xlsx or CSV and import again.',
       );
     }
-    return parseGuestXlsx(buffer);
+    try {
+      return await parseGuestXlsx(buffer);
+    } catch (exceljsErr) {
+      try {
+        return parseGuestExcelSheetjs(buffer);
+      } catch (sheetjsErr) {
+        throw new GuestFileFormatError(
+          "We couldn't read this .xlsx file. Re-save it from Excel or Google Sheets as .xlsx or CSV and try again.",
+          [`ExcelJS: ${errMessage(exceljsErr)}`, `SheetJS: ${errMessage(sheetjsErr)}`],
+        );
+      }
+    }
   }
+
   return parseGuestCsv(buffer);
 }

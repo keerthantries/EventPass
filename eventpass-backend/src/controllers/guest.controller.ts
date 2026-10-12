@@ -206,12 +206,14 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     rows = await parseGuestFile(req.file.buffer, req.file.originalname);
   } catch (err) {
     // Parser failures (corrupt file, renamed non-xlsx, header mismatch) used to
-    // surface as a generic 500. Return an actionable 400 instead.
+    // surface as a generic 500. Return an actionable 400 instead — format
+    // errors carry a specific message plus engine diagnostics in details.
     logger.error({ err, file: req.file.originalname }, 'guest import: file parse failed');
+    if (err instanceof GuestFileFormatError) {
+      throw ApiError.badRequest(err.message, err.details);
+    }
     throw ApiError.badRequest(
-      err instanceof GuestFileFormatError
-        ? err.message
-        : "We couldn't read that file. Save it as a CSV (comma or tab separated) or Excel .xlsx file and try again.",
+      "We couldn't read that file. Save it as a CSV (comma or tab separated) or Excel .xlsx file and try again.",
     );
   }
   if (rows.length > 5000) throw ApiError.badRequest('File exceeds the 5,000 row limit.');
