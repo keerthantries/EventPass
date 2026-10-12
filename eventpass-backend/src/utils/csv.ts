@@ -21,10 +21,13 @@ export interface ParsedGuestRow {
 
 const HEADER_MAP: Record<string, keyof Omit<ParsedGuestRow, 'row'>> = {
   'full name': 'fullName',
+  fullname: 'fullName', // camelCase headers arrive lowercased (incl. our own export)
   name: 'fullName',
   'guest name': 'fullName',
   'first name': 'firstName',
+  firstname: 'firstName',
   'last name': 'lastName',
+  lastname: 'lastName',
   email: 'email',
   phone: 'phone',
   category: 'category',
@@ -49,6 +52,7 @@ const HEADER_MAP: Record<string, keyof Omit<ParsedGuestRow, 'row'>> = {
   reservedtable: 'reservedTable',
   vip: 'isVip',
   'immediate family': 'isImmediateFamily',
+  immediatefamily: 'isImmediateFamily',
   notes: 'notes',
 };
 
@@ -177,9 +181,36 @@ export async function parseGuestXlsx(buffer: Buffer): Promise<ParsedGuestRow[]> 
   return rows;
 }
 
-/** Dispatches to the right parser based on file extension / MIME type. */
-export function parseGuestFile(buffer: Buffer, filename = ''): Promise<ParsedGuestRow[]> {
+/** Thrown when the file's real format can't be handled; message is shown to the user. */
+export class GuestFileFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GuestFileFormatError';
+  }
+}
+
+const OLE2_MAGIC = [0xd0, 0xcf, 0x11, 0xe0]; // legacy Excel 97-2003 .xls compound document
+const ZIP_MAGIC = [0x50, 0x4b]; // .xlsx is a zip container
+
+function startsWith(buffer: Buffer, bytes: number[]): boolean {
+  return buffer.length >= bytes.length && bytes.every((b, i) => buffer[i] === b);
+}
+
+/** Dispatches to the right parser based on file extension / MAGIC bytes. */
+export async function parseGuestFile(buffer: Buffer, filename = ''): Promise<ParsedGuestRow[]> {
   const lower = filename.toLowerCase();
-  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) return parseGuestXlsx(buffer);
+  if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+    if (startsWith(buffer, OLE2_MAGIC)) {
+      throw new GuestFileFormatError(
+        "This looks like an old Excel 97-2003 (.xls) file, which isn't supported. Open it in Excel or Google Sheets and re-save as 'Excel Workbook (.xlsx)' or CSV, then import again.",
+      );
+    }
+    if (!startsWith(buffer, ZIP_MAGIC)) {
+      throw new GuestFileFormatError(
+        'This .xlsx file appears to be corrupt or was renamed from another format. Re-save it from Excel or Google Sheets as .xlsx or CSV and import again.',
+      );
+    }
+    return parseGuestXlsx(buffer);
+  }
   return parseGuestCsv(buffer);
 }

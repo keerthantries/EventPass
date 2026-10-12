@@ -13,7 +13,7 @@ import { ApiError } from '../utils/ApiError';
 import { parsePagination, buildMeta } from '../utils/pagination';
 import { generateInvitationToken, generateQrToken, generatePartyToken } from '../utils/tokens';
 import { generateQrImage, qrFilePath } from '../utils/qr';
-import { parseGuestFile } from '../utils/csv';
+import { parseGuestFile, GuestFileFormatError } from '../utils/csv';
 import { getOwnedEvent } from './event.controller';
 import { writeAuditLog } from '../models/AuditLog';
 import { logger } from '../utils/logger';
@@ -209,7 +209,9 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     // surface as a generic 500. Return an actionable 400 instead.
     logger.error({ err, file: req.file.originalname }, 'guest import: file parse failed');
     throw ApiError.badRequest(
-      "We couldn't read that file. Save it as a CSV (comma or tab separated) or Excel .xlsx file and try again.",
+      err instanceof GuestFileFormatError
+        ? err.message
+        : "We couldn't read that file. Save it as a CSV (comma or tab separated) or Excel .xlsx file and try again.",
     );
   }
   if (rows.length > 5000) throw ApiError.badRequest('File exceeds the 5,000 row limit.');
