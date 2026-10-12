@@ -96,8 +96,34 @@ export function parseGuestCsv(buffer: Buffer): Promise<ParsedGuestRow[]> {
     const rows: ParsedGuestRow[] = [];
     let rowNum = 0;
 
+    // Sniff the delimiter: tab-separated exports saved as ".csv" (Google Sheets /
+    // Excel "Unicode Text") would otherwise parse as a single unnamed column.
+    const firstLine = buffer.toString('utf8', 0, 8192).split(/\r?\n/).find((l) => l.trim() !== '') ?? '';
+    const delimiter = firstLine.includes('\t') && !firstLine.includes(',') ? '\t' : ',';
+
+    const seenHeaders = new Set<string>();
     Readable.from(buffer)
-      .pipe(parse({ headers: (headers) => headers.map((h) => (h ?? '').toString().trim().toLowerCase()) }))
+      .pipe(
+        parse({
+          headers: (headers) =>
+            headers.map((h) => {
+              let name = (h ?? '').toString().trim().toLowerCase();
+              // Duplicate headers (e.g. "Table" and "TABLE") crash fast-csv;
+              // suffix the repeats so the row still maps.
+              if (seenHeaders.has(name)) {
+                let i = 2;
+                while (seenHeaders.has(`${name}_${i}`)) i += 1;
+                name = `${name}_${i}`;
+              }
+              seenHeaders.add(name);
+              return name;
+            }),
+          delimiter,
+          // A stray extra cell in a data row (trailing tab/comma) used to throw
+          // "column header mismatch" and fail the whole import with a 500.
+          discardUnmappedColumns: true,
+        }),
+      )
       .on('error', reject)
       .on('data', (raw: Record<string, string>) => {
         rowNum += 1;

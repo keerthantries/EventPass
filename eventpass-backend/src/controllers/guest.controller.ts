@@ -16,6 +16,7 @@ import { generateQrImage, qrFilePath } from '../utils/qr';
 import { parseGuestFile } from '../utils/csv';
 import { getOwnedEvent } from './event.controller';
 import { writeAuditLog } from '../models/AuditLog';
+import { logger } from '../utils/logger';
 
 /** GET /events/:eventId/guests */
 export const listGuests = asyncHandler(async (req: Request, res: Response) => {
@@ -189,6 +190,8 @@ export const bulkGuestAction = asyncHandler(async (req: Request, res: Response) 
 });
 
 /** POST /events/:eventId/guests/import */
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export const importGuests = asyncHandler(async (req: Request, res: Response) => {
   const event = await getOwnedEvent(req.params.eventId, req);
 
@@ -198,7 +201,17 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     throw ApiError.badRequest('Unsupported file type. Upload a CSV or Excel (.xlsx) file.');
   }
 
-  const rows = await parseGuestFile(req.file.buffer, req.file.originalname);
+  let rows;
+  try {
+    rows = await parseGuestFile(req.file.buffer, req.file.originalname);
+  } catch (err) {
+    // Parser failures (corrupt file, renamed non-xlsx, header mismatch) used to
+    // surface as a generic 500. Return an actionable 400 instead.
+    logger.error({ err, file: req.file.originalname }, 'guest import: file parse failed');
+    throw ApiError.badRequest(
+      "We couldn't read that file. Save it as a CSV (comma or tab separated) or Excel .xlsx file and try again.",
+    );
+  }
   if (rows.length > 5000) throw ApiError.badRequest('File exceeds the 5,000 row limit.');
 
   const [config, existingGuests] = await Promise.all([
@@ -214,7 +227,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     if (!name) return null;
     const key = name.trim().toLowerCase();
     if (categoryCache.has(key)) return categoryCache.get(key)!;
-    let cat = await Category.findOne({ eventId: event._id, name: new RegExp(`^${name.trim()}$`, 'i') });
+    let cat = await Category.findOne({ eventId: event._id, name: new RegExp(`^${escapeRegExp(name.trim())}$`, 'i') });
     if (!cat) cat = await Category.create({ eventId: event._id, name: name.trim() });
     categoryCache.set(key, cat.id);
     return cat.id;
@@ -231,7 +244,7 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
     let party = ext
       ? await Party.findOne({ eventId: event._id, externalId: ext })
       : name
-        ? await Party.findOne({ eventId: event._id, name: new RegExp(`^${name.trim()}$`, 'i') })
+        ? await Party.findOne({ eventId: event._id, name: new RegExp(`^${escapeRegExp(name.trim())}$`, 'i') })
         : null;
 
     if (!party) {
@@ -261,62 +274,85 @@ export const importGuests = asyncHandler(async (req: Request, res: Response) => 
   const errors: { row: number; reason: string }[] = [];
 
   for (const row of rows) {
-    const computedFullName = row.fullName ?? [row.firstName, row.lastName].filter(Boolean).join(' ');
-    if (!computedFullName) {
-      errors.push({ row: row.row, reason: 'fullName or firstName is required' });
-      continue;
-    }
-    if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
-      errors.push({ row: row.row, reason: 'invalid email format' });
-      continue;
-    }
-
-    const nameKey = computedFullName.toLowerCase().trim();
-    const existing = existingByName.get(nameKey);
-    if (existing) {
-      const nextTable = row.reservedTable?.trim();
-      if (nextTable && (existing.reservedTable ?? '').trim() !== nextTable) {
-        await Guest.updateOne({ _id: existing.id, eventId: event._id }, { $set: { reservedTable: nextTable } });
-        updated += 1;
-      } else {
-        skippedDuplicates += 1;
+    try {
+      const computedFullName = row.fullName ?? [row.firstName, row.lastName].filter(Boolean).join(' ');
+      if (!computedFullName) {
+        errors.push({ row: row.row, reason: 'fullName or firstName is required' });
+        continue;
       }
-      continue;
+      if (computedFullName.trim().length < 2) {
+        errors.push({ row: row.row, reason: 'name must be at least 2 characters' });
+        continue;
+      }
+      if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+        errors.push({ row: row.row, reason: 'invalid email format' });
+        continue;
+      }
+      if (row.phone && row.phone.length > 20) {
+        errors.push({ row: row.row, reason: 'phone number is too long (max 20 characters)' });
+        continue;
+      }
+
+      const nameKey = computedFullName.toLowerCase().trim();
+      const existing = existingByName.get(nameKey);
+      if (existing) {
+        const nextTable = row.reservedTable?.trim();
+        if (nextTable && (existing.reservedTable ?? '').trim() !== nextTable) {
+          await Guest.updateOne({ _id: existing.id, eventId: event._id }, { $set: { reservedTable: nextTable } });
+          updated += 1;
+        } else {
+          skippedDuplicates += 1;
+        }
+        continue;
+      }
+
+      const categoryId = await resolveCategory(row.category);
+      const partyId = await resolveParty(row.partyName, row.side, row.partyId);
+
+      const guestData: Record<string, any> = {
+        eventId: event._id,
+        fullName: computedFullName,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        phone: row.phone,
+        notes: row.notes,
+        categoryId,
+        partyId,
+        side: row.side,
+        reservedTable: row.reservedTable?.trim() || null,
+        isVip: row.isVip ?? false,
+        isImmediateFamily: row.isImmediateFamily ?? false,
+        invitationToken: generateInvitationToken(),
+      };
+
+      if (generateQr) {
+        guestData.qrToken = generateQrToken();
+        guestData.qrGeneratedAt = new Date();
+      }
+
+      const guest = await Guest.create(guestData);
+
+      if (generateQr && guest.qrToken) {
+        await generateQrImage(guest.qrToken);
+      }
+
+      existingByName.set(nameKey, { id: guest._id, reservedTable: guest.reservedTable ?? null });
+      imported += 1;
+    } catch (err) {
+      // Contain row-level failures (duplicate key, validation, party/category
+      // creation) as per-row errors instead of aborting the whole import.
+      logger.warn({ err, row: row.row }, 'guest import: row failed');
+      const isDupKey = typeof err === 'object' && err !== null && (err as any).code === 11000;
+      const reason = isDupKey
+        ? String((err as any).message ?? '').includes('email')
+          ? "another guest in this event already has this email"
+          : 'a unique field on this row already exists'
+        : err instanceof Error
+          ? err.message.slice(0, 200)
+          : 'could not import this row';
+      errors.push({ row: row.row, reason });
     }
-
-    const categoryId = await resolveCategory(row.category);
-    const partyId = await resolveParty(row.partyName, row.side, row.partyId);
-
-    const guestData: Record<string, any> = {
-      eventId: event._id,
-      fullName: computedFullName,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      email: row.email,
-      phone: row.phone,
-      notes: row.notes,
-      categoryId,
-      partyId,
-      side: row.side,
-      reservedTable: row.reservedTable?.trim() || null,
-      isVip: row.isVip ?? false,
-      isImmediateFamily: row.isImmediateFamily ?? false,
-      invitationToken: generateInvitationToken(),
-    };
-
-    if (generateQr) {
-      guestData.qrToken = generateQrToken();
-      guestData.qrGeneratedAt = new Date();
-    }
-
-    const guest = await Guest.create(guestData);
-
-    if (generateQr && guest.qrToken) {
-      await generateQrImage(guest.qrToken);
-    }
-
-    existingByName.set(nameKey, { id: guest._id, reservedTable: guest.reservedTable ?? null });
-    imported += 1;
   }
 
   await writeAuditLog(req.user!.sub, 'guest.import', 'Event', event.id, { imported, updated, skippedDuplicates, failed: errors.length });

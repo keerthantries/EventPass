@@ -19,6 +19,8 @@ export function GuestImportForm({ eventId, onDone }: { eventId: string; onDone?:
       const parts = [`${result.imported} imported`];
       if (result.updated) parts.push(`${result.updated} tables updated`);
       parts.push(`${result.skippedDuplicates} unchanged`, `${result.failed} failed`);
+      const firstError = result.failed > 0 ? result.errors?.[0] : undefined;
+      if (firstError) parts.push(`row ${firstError.row}: ${firstError.reason}`);
       toast({
         title: "Import complete",
         description: parts.join(" · "),
@@ -35,7 +37,7 @@ export function GuestImportForm({ eventId, onDone }: { eventId: string; onDone?:
       <FileUpload
         accept=".csv,.xlsx,.xls"
         label="Choose CSV or Excel file"
-        hint="Supports CSV and Excel (.xlsx). Columns: fullName, email, phone, category, table, notes (fullName required)"
+        hint="Excel (.xlsx) or CSV (comma or tab separated). Columns: fullName, first/last name, email, phone, category, party/family name, side, table, vip, immediate family, notes. Name is required — email duplicates are skipped automatically."
         onFile={setFile}
       />
       {importMutation.isError && !importMutation.data ? (

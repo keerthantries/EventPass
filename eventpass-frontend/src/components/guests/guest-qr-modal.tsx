@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Share2, Download, QrCode, Loader2, RefreshCw, Sparkles, Ticket } from "lucide-react";
-import { Modal, ModalContent, ModalTitle, ModalBody } from "@/components/ui/modal";
+import { useEffect, useRef, useState } from "react";
+import { Share2, Download, Loader2, RefreshCw, Sparkles, Ticket } from "lucide-react";
+import { Modal, ModalContent, ModalBody } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { downloadFile, tokenStore, API_URL } from "@/lib/api";
 import type { Guest, EventDetail } from "@/lib/types";
@@ -17,17 +17,23 @@ interface GuestQrModalProps {
   regenerating?: boolean;
 }
 
+interface QrResult {
+  id: string;
+  src: string | null;
+  error: string | null;
+}
+
 function useQrImage(guestId: string, open: boolean, downloadUrl: string) {
-  const [src, setSrc] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<QrResult | null>(null);
+  const srcRef = useRef<string | null>(null);
+
+  const loading = open && (!result || result.id !== guestId);
+  const src = loading ? null : result?.src ?? null;
+  const error = loading ? null : result?.error ?? null;
 
   useEffect(() => {
     if (!open) return;
-    let objectUrl: string | null = null;
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     fetch(`${API_URL}/guests/${guestId}/qr/download`, {
       headers: tokenStore.get() ? { Authorization: `Bearer ${tokenStore.get()}` } : undefined,
@@ -39,21 +45,26 @@ function useQrImage(guestId: string, open: boolean, downloadUrl: string) {
       })
       .then((blob) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setSrc(objectUrl);
+        const url = URL.createObjectURL(blob);
+        if (srcRef.current) URL.revokeObjectURL(srcRef.current);
+        srcRef.current = url;
+        setResult({ id: guestId, src: url, error: null });
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(e.message);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setResult({ id: guestId, src: null, error: e.message });
       });
 
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [guestId, open, downloadUrl]);
+
+  useEffect(
+    () => () => {
+      if (srcRef.current) URL.revokeObjectURL(srcRef.current);
+    },
+    [],
+  );
 
   return { src, loading, error };
 }

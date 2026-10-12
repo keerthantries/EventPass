@@ -13,9 +13,20 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   // Mongoose duplicate key error
   if (typeof err === 'object' && err !== null && (err as any).code === 11000) {
+    logger.error({ err }, 'Duplicate key error');
     return res.status(409).json({
       success: false,
       error: { code: 'CONFLICT', message: 'A resource with these unique fields already exists.', details: [] },
+    });
+  }
+
+  // Multer upload errors (size limit, unexpected field name)
+  if (typeof err === 'object' && err !== null && (err as any).name === 'MulterError') {
+    const message =
+      (err as any).code === 'LIMIT_FILE_SIZE' ? 'File exceeds the 5MB limit.' : 'Invalid file upload.';
+    return res.status(400).json({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message, details: [] },
     });
   }
 
